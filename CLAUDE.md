@@ -120,7 +120,7 @@ tmux new-session -d -s opencode-dev-desktop "$HOME/.opencode-dev/bin/opencode-de
 - The sidecar backend is forked with the launcher's environment, listens on a random `127.0.0.1` port, and, because the bundle is built for the `dev` channel, opens `~/.opencode-dev/data/opencode/opencode-dev.db`, a different file from the TUI's `opencode-local.db`.
 - First-launch onboarding creates an empty `~/Documents/Default Project` folder.
 - Do not set `OPENCODE_SIDECAR_V2=1`. That path probes every known state home, including the installed desktop app's, and would reuse a daily background daemon if one were running.
-- Killing the tmux session ends electron-vite. If an Electron window survives, quit it from the Dock or run `pkill -f "packages/desktop/node_modules/electron"`.
+- Killing the tmux session ends electron-vite but **not** the Electron app: it is reparented to launchd and keeps running against a dead Vite server and dead stdio. Always quit it from the Dock, or run `pkill -f "node_modules/electron/dist/Electron"`. Do not match on `packages/desktop/node_modules/electron` — that path is a symlink into the bun store, so the running process's command line is `node_modules/.bun/electron@<version>/node_modules/electron/dist/Electron` and the pattern silently matches nothing. Verify with `pgrep -fl "node_modules/electron/dist/Electron"` before assuming the app is gone.
 
 **Rules that apply to every surface**:
 

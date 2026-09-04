@@ -199,12 +199,24 @@ function initConsoleTransport() {
     try {
       write(options)
     } catch (err) {
-      if (!isBrokenPipe(err)) throw err
+      if (!isDeadStdio(err)) throw err
       log.transports.console.level = false
     }
   }
 }
 
-function isBrokenPipe(err: unknown) {
-  return typeof err === "object" && err !== null && "code" in err && err.code === "EPIPE"
+// Dev runs inherit the launching terminal's stdio, which can die before the app does. A closed
+// pipe reader gives EPIPE, but a destroyed pty (closing the terminal or killing its tmux session)
+// gives EIO, and a closed descriptor gives EBADF/ENXIO — all mean the same thing here: stop
+// writing to the console instead of crashing the app with an uncaught exception.
+const DEAD_STDIO_CODES = new Set(["EPIPE", "EIO", "EBADF", "ENXIO"])
+
+function isDeadStdio(err: unknown) {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    typeof err.code === "string" &&
+    DEAD_STDIO_CODES.has(err.code)
+  )
 }
