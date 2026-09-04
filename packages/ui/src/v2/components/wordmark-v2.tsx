@@ -1,5 +1,7 @@
 import { createUniqueId, type ComponentProps } from "solid-js"
 
+// Traced from reference/VsWork-text.png; regenerate with `bun run script/brand.ts`.
+
 export function WordmarkV2(props: Pick<ComponentProps<"svg">, "class">) {
   const mask = createUniqueId()
   const maskGradient = createUniqueId()
@@ -7,63 +9,28 @@ export function WordmarkV2(props: Pick<ComponentProps<"svg">, "class">) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 720 129"
+      viewBox="0 0 230 30"
       fill="none"
       classList={{ [props.class ?? ""]: !!props.class }}
     >
       <g opacity="0.6">
         <g mask={`url(#${mask})`}>
-          <g opacity="0.16">
-            <path
-              opacity="0.7"
-              d="M55.3846 36.4286H18.4615V91.7143H55.3846V36.4286ZM73.8462 110.143H0V18H73.8462V110.143Z"
-              fill="currentColor"
-            />
-            <path
-              opacity="0.7"
-              d="M110.462 91.7143H147.385V36.4286H110.462V91.7143ZM165.846 110.143H110.462V128.571H92V18H165.846V110.143Z"
-              fill="currentColor"
-            />
-            <path
-              opacity="0.7"
-              d="M258.846 73.2857H203.462V91.7143H258.846V110.143H185V18H258.846V73.2857ZM203.462 54.8571H240.385V36.4286H203.462V54.8571Z"
-              fill="currentColor"
-            />
-            <path
-              opacity="0.7"
-              d="M332.385 36.4286H295.462V110.143H277V18H332.385V36.4286ZM350.846 110.143H332.385V36.4286H350.846V110.143Z"
-              fill="currentColor"
-            />
-            <path
-              opacity="0.7"
-              d="M442.846 36.4286H387.462V91.7143H442.846V110.143H369V18H442.846V36.4286Z"
-              fill="currentColor"
-            />
-            <path
-              opacity="0.7"
-              d="M517.385 36.4286H480.462V91.7143H517.385V36.4286ZM535.846 110.143H462V18H535.846V110.143Z"
-              fill="currentColor"
-            />
-            <path
-              opacity="0.7"
-              d="M609.385 36.8571H572.462V92.1429H609.385V36.8571ZM627.846 110.571H554V18.4286H609.385V0H627.846V110.571Z"
-              fill="currentColor"
-            />
-            <path
-              opacity="0.7"
-              d="M664.462 36.4286V54.8571H701.385V36.4286H664.462ZM719.846 73.2857H664.462V91.7143H719.846V110.143H646V18H719.846V73.2857Z"
-              fill="currentColor"
-            />
-          </g>
+          <path
+            data-slot="wordmark-v2"
+            fill-rule="evenodd"
+            clip-rule="evenodd"
+            d="M0 0H7V13H0ZM21 0H28V13H21ZM60 0H67V30H60ZM82 0H89V30H82ZM153 0H160V30H153ZM32 7H55V13H32ZM93 7H120V13H93ZM124 7H148V13H124ZM170 7H178V13H170ZM182 7H205V13H182ZM209 7H230V13H209ZM7 12H10V30H7ZM18 12H21V30H18ZM71 12H78V26H71ZM165 12H170V26H165ZM3 13H7V21H3ZM21 13H25V21H21ZM32 13H39V21H32ZM93 13H100V30H93ZM113 13H120V30H113ZM124 13H131V30H124ZM170 13H174V17H170ZM182 13H189V30H182ZM198 13H205V21H198ZM209 13H216V30H209ZM160 15H165V22H160ZM39 16H55V21H39ZM189 16H198V21H189ZM67 20H71V30H67ZM78 20H82V30H78ZM170 20H174V30H170ZM6 21H7V30H6ZM10 21H18V30H10ZM21 21H22V30H21ZM48 21H55V30H48ZM32 24H48V30H32ZM100 24H113V30H100ZM174 24H178V30H174ZM189 24H205V30H189ZM71 26H72V30H71ZM76 26H78V30H76Z"
+            fill="currentColor"
+          />
         </g>
       </g>
       <defs>
-        <mask id={mask} style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="720" height="129">
-          <rect width="720" height="129" fill={`url(#${maskGradient})`} />
+        <mask id={mask} style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="230" height="30">
+          <rect width="230" height="30" fill={`url(#${maskGradient})`} />
         </mask>
-        <linearGradient id={maskGradient} x1="360" y1="68" x2="360" y2="129" gradientUnits="userSpaceOnUse">
-          <stop stop-color="white" stop-opacity="0.7" />
-          <stop offset="1" stop-color="white" stop-opacity="0" />
+        <linearGradient id={maskGradient} x1="115" y1="0" x2="115" y2="30" gradientUnits="userSpaceOnUse">
+          <stop stop-color="white" />
+          <stop offset="1" stop-color="white" stop-opacity="0.35" />
         </linearGradient>
       </defs>
     </svg>

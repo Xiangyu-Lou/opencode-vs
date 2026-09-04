@@ -2,12 +2,12 @@ import { EOL } from "os"
 import { Schema } from "effect"
 import { logo as glyphs } from "./logo"
 
-const wordmark = [
-  `⠀                                ▄     `,
-  `█▀▀█ █▀▀█ █▀▀█ █▀▀▄ █▀▀▀ █▀▀█ █▀▀█ █▀▀█`,
-  `█  █ █  █ █▀▀▀ █  █ █    █  █ █  █ █▀▀▀`,
-  `▀▀▀▀ █▀▀▀ ▀▀▀▀ ▀  ▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀`,
-]
+// Plain fallback for non-TTY output: the same wordmark with the shadow marks flattened.
+const wordmark = glyphs.left.map((line, index) =>
+  [...line, " ", ...(glyphs.right[index] ?? "")]
+    .map((char) => (char === "_" ? " " : char === "^" || char === "~" ? "▀" : char === "," ? "▄" : char))
+    .join(""),
+)
 
 export class CancelledError extends Schema.TaggedErrorClass<CancelledError>()("UICancelledError", {}) {}
 
