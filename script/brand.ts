@@ -62,11 +62,25 @@ function squircle(size: number, inset = 0, n = 5) {
 
 type Ground = { id: string; from: string; to: string }
 
+// The three app channels intentionally share one white ground — they are kept as separate
+// entries so a channel can diverge again without reshaping the callers. `flat` is the dark
+// ground the web assets use (favicons, PWA icons, social cards) and is unrelated to these.
+const APP_GROUND = { from: "#FFFFFF", to: "#F0F0F2" }
+
 const GROUNDS: Record<string, Ground> = {
-  prod: { id: "prod", from: "#333333", to: "#050505" },
-  beta: { id: "beta", from: "#F4F4F4", to: "#CBCBCB" },
-  dev: { id: "dev", from: "#5DAAFF", to: "#0018AF" },
+  prod: { id: "prod", ...APP_GROUND },
+  beta: { id: "beta", ...APP_GROUND },
+  dev: { id: "dev", ...APP_GROUND },
   flat: { id: "flat", from: "#131010", to: "#131010" },
+}
+
+/** Light grounds need an edge, or the squircle vanishes against a white Finder background. */
+function isLight(ground: Ground) {
+  const luma = (hex: string) => {
+    const n = parseInt(hex.slice(1), 16)
+    return (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255
+  }
+  return (luma(ground.from) + luma(ground.to)) / 2 > 0.6
 }
 
 /**
@@ -85,10 +99,16 @@ async function badge(opts: {
   const inset = opts.inset ?? 0
   const markW = size * (opts.markWidth ?? 0.62)
   const markH = (markW * 98) / 112
+  // A hairline keeps a light squircle readable on light backgrounds; the inset .icns artwork
+  // gets its edge from the drop shadow instead, so it does not need one.
+  const edge =
+    isLight(ground) && !opts.shadow
+      ? ` stroke="rgba(0,0,0,0.08)" stroke-width="${Math.max(1, size * 0.004).toFixed(2)}"`
+      : ""
   const bg =
     shape === "square"
-      ? `<rect width="${size}" height="${size}" fill="url(#g)"/>`
-      : `<path d="${squircle(size, inset)}" fill="url(#g)"${opts.shadow ? ' filter="url(#s)"' : ""}/>`
+      ? `<rect width="${size}" height="${size}" fill="url(#g)"${edge}/>`
+      : `<path d="${squircle(size, inset)}" fill="url(#g)"${edge}${opts.shadow ? ' filter="url(#s)"' : ""}/>`
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
 <defs>
 <linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${ground.from}"/><stop offset="1" stop-color="${ground.to}"/></linearGradient>
