@@ -90,7 +90,7 @@ Start each surface in its own tmux session so it can be inspected with `tmux cap
 **TUI** (database `opencode-local.db`):
 
 ```bash
-tmux new-session -d -s opencode-dev "$HOME/.opencode-dev/bin/opencode-dev /Users/lou/Documents/VictorySoft/opencode-vs"
+tmux new-session -d -s opencode-dev "$HOME/.opencode-dev/bin/opencode-dev /Users/lou/Projects/vs/opencode-vs"
 ```
 
 **Headless server + hosted web UI** (same database as the TUI; the UI is proxied from `https://app.opencode.ai`, so it needs network and does not reflect local UI code; the backend binds to 127.0.0.1 and is unsecured unless `OPENCODE_SERVER_PASSWORD` is set):
