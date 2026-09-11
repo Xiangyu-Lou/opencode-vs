@@ -7,6 +7,10 @@ node_modules
 .idea
 .vscode
 .codex
+# Agent tool state -- not .opencode/, which is tracked source
+.claude/
+.cursor/
+.cursorrules
 *~
 playground
 tmp
