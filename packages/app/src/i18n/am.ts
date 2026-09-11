@@ -77,8 +77,8 @@ export const dict = {
   "desktop.wsl.error.installDistro": "distroን መጫን አልተቻለም፡ {{distro}}",
   "desktop.wsl.error.installOpencode": "VsWorkerመጫኑ አልተሳካም",
   "desktop.wsl.error.alreadyAdded": "{{distro}} አስቀድሞ ታክሏል",
-  "desktop.wsl.error.opencodeMissing": "ክፍት ኮድ በዚህ ዲስትሪ ውስጥ አልተጫነም",
-  "desktop.wsl.error.opencodeCannotRun": "ክፍት ኮድ ተጭኗል ግን ማሄድ አልቻለም",
+  "desktop.wsl.error.opencodeMissing": "VsWorker በዚህ ዲስትሪ ውስጥ አልተጫነም",
+  "desktop.wsl.error.opencodeCannotRun": "VsWorker ተጭኗል ግን ማሄድ አልቻለም",
   "desktop.wsl.error.opencodeNotInstalled": "VsWorker በ{{distro}}] ውስጥ አልተጫነም",
   "desktop.wsl.error.updateVersion":
     "VsWorker ዝማኔ አልቋል ግን {{distro}} አሁንም ሪፖርት ያደርጋል {{installed}}; የሚጠበቀው {{expected}}",

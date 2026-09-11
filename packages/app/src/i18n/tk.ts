@@ -78,8 +78,8 @@ export const dict = {
   "desktop.wsl.error.installDistro": "Distro gurup bilmedi: {{distro}}",
   "desktop.wsl.error.installOpencode": "VsWorker gurmak şowsuz",
   "desktop.wsl.error.alreadyAdded": "{{distro}} eýýäm goşuldy",
-  "desktop.wsl.error.opencodeMissing": "açyk kod bu distroda gurlanok",
-  "desktop.wsl.error.opencodeCannotRun": "opencode guruldy, ýöne işledip bilmedi",
+  "desktop.wsl.error.opencodeMissing": "VsWorker bu distroda gurlanok",
+  "desktop.wsl.error.opencodeCannotRun": "VsWorker guruldy, ýöne işledip bilmedi",
   "desktop.wsl.error.opencodeNotInstalled": "VsWorker {{distro}} gurulmady",
   "desktop.wsl.error.updateVersion":
     "VsWorker täzelenmesi gutardy, ýöne {{distro}} henizem {{installed}} habar berýär; garaşylýan {{expected}}",

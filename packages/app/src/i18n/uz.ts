@@ -78,8 +78,8 @@ export const dict = {
   "desktop.wsl.error.installDistro": "Distroni oʻrnatib boʻlmadi: {{distro}}",
   "desktop.wsl.error.installOpencode": "VsWorker oʻrnatilmadi",
   "desktop.wsl.error.alreadyAdded": "{{distro}} allaqachon qo'shilgan",
-  "desktop.wsl.error.opencodeMissing": "Opencode ushbu tarqatishda o'rnatilmagan",
-  "desktop.wsl.error.opencodeCannotRun": "opencode o'rnatilgan, lekin ishga tushirilmadi",
+  "desktop.wsl.error.opencodeMissing": "VsWorker ushbu tarqatishda o'rnatilmagan",
+  "desktop.wsl.error.opencodeCannotRun": "VsWorker o'rnatilgan, lekin ishga tushirilmadi",
   "desktop.wsl.error.opencodeNotInstalled": "VsWorker {{distro}} da o'rnatilmagan",
   "desktop.wsl.error.updateVersion":
     "VsWorker yangilanishi tugallandi, lekin {{distro}} hali ham {{installed}} haqida xabar beradi; kutilgan {{expected}}",

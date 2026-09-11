@@ -82,8 +82,8 @@ export const dict = {
   "desktop.wsl.error.installDistro": "Instalacija distribucije nije uspjela: {{distro}}",
   "desktop.wsl.error.installOpencode": "Instalacija VsWorker-a nije uspjela",
   "desktop.wsl.error.alreadyAdded": "Distribucija {{distro}} je već dodana",
-  "desktop.wsl.error.opencodeMissing": "opencode nije instaliran u ovoj distribuciji",
-  "desktop.wsl.error.opencodeCannotRun": "opencode je instaliran, ali se ne može pokrenuti",
+  "desktop.wsl.error.opencodeMissing": "VsWorker nije instaliran u ovoj distribuciji",
+  "desktop.wsl.error.opencodeCannotRun": "VsWorker je instaliran, ali se ne može pokrenuti",
   "desktop.wsl.error.opencodeNotInstalled": "VsWorker nije instaliran u distribuciji {{distro}}",
   "desktop.wsl.error.updateVersion":
     "Ažuriranje VsWorker-a je završeno, ali {{distro}} i dalje prijavljuje {{installed}}; očekivano je {{expected}}",

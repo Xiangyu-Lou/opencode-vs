@@ -78,8 +78,8 @@ export const dict = {
   "desktop.wsl.error.installDistro": "Дистро суулгаж чадсангүй: {{distro}}",
   "desktop.wsl.error.installOpencode": "VsWorker суулгаж чадсангүй",
   "desktop.wsl.error.alreadyAdded": "{{distro}} аль хэдийн нэмэгдсэн байна",
-  "desktop.wsl.error.opencodeMissing": "opencode энэ түгээлтэд суулгаагүй байна",
-  "desktop.wsl.error.opencodeCannotRun": "opencode суулгасан боловч ажиллуулж чадсангүй",
+  "desktop.wsl.error.opencodeMissing": "VsWorker энэ түгээлтэд суулгаагүй байна",
+  "desktop.wsl.error.opencodeCannotRun": "VsWorker суулгасан боловч ажиллуулж чадсангүй",
   "desktop.wsl.error.opencodeNotInstalled": "VsWorker-г {{distro}}-д суулгаагүй байна",
   "desktop.wsl.error.updateVersion":
     "VsWorker шинэчлэлт дууссан боловч {{distro}} мэдээлсэн хэвээр {{installed}}; хүлээгдэж буй {{expected}}",

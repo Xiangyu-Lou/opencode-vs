@@ -86,8 +86,8 @@ export const dict = {
   "desktop.wsl.error.installDistro": "Dağıtım kurulamadı: {{distro}}",
   "desktop.wsl.error.installOpencode": "VsWorker kurulamadı",
   "desktop.wsl.error.alreadyAdded": "{{distro}} zaten eklendi",
-  "desktop.wsl.error.opencodeMissing": "opencode bu dağıtımda kurulu değil",
-  "desktop.wsl.error.opencodeCannotRun": "opencode kurulu ancak çalıştırılamadı",
+  "desktop.wsl.error.opencodeMissing": "VsWorker bu dağıtımda kurulu değil",
+  "desktop.wsl.error.opencodeCannotRun": "VsWorker kurulu ancak çalıştırılamadı",
   "desktop.wsl.error.opencodeNotInstalled": "VsWorker, {{distro}} içinde kurulu değil",
   "desktop.wsl.error.updateVersion":
     "VsWorker güncellemesi tamamlandı ancak {{distro}} hâlâ {{installed}} sürümünü bildiriyor; beklenen sürüm: {{expected}}",

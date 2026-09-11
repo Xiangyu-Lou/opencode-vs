@@ -81,8 +81,8 @@ export const dict = {
   "desktop.wsl.error.installDistro": "فشل تثبيت التوزيعة: {{distro}}",
   "desktop.wsl.error.installOpencode": "فشل تثبيت VsWorker",
   "desktop.wsl.error.alreadyAdded": "تمت إضافة {{distro}} بالفعل",
-  "desktop.wsl.error.opencodeMissing": "opencode غير مثبت في هذه التوزيعة",
-  "desktop.wsl.error.opencodeCannotRun": "opencode مثبت، لكن تعذر تشغيله",
+  "desktop.wsl.error.opencodeMissing": "VsWorker غير مثبت في هذه التوزيعة",
+  "desktop.wsl.error.opencodeCannotRun": "VsWorker مثبت، لكن تعذر تشغيله",
   "desktop.wsl.error.opencodeNotInstalled": "VsWorker غير مثبت في {{distro}}",
   "desktop.wsl.error.updateVersion":
     "اكتمل تحديث VsWorker، لكن {{distro}} ما زالت تعرض الإصدار {{installed}}؛ الإصدار المتوقع هو {{expected}}",

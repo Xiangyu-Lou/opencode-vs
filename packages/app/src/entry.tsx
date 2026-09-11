@@ -55,6 +55,11 @@ const setStorage = (key: string, value: string | null) => {
 const readDefaultServerUrl = () => getStorage(DEFAULT_SERVER_URL_KEY)
 const writeDefaultServerUrl = (url: string | null) => setStorage(DEFAULT_SERVER_URL_KEY, url)
 
+// Reuse whatever icon the document already declares rather than hardcoding a path: the web app
+// serves it from "/", the packaged desktop renderer from "./" next to a file:// index.html.
+// HTMLLinkElement.href resolves both to an absolute URL, and works offline.
+const notificationIcon = () => document.querySelector<HTMLLinkElement>('link[rel="icon"][type="image/png"]')?.href
+
 const notify: Platform["notify"] = async (title, description, onClick) => {
   if (!("Notification" in window)) return
 
@@ -70,7 +75,7 @@ const notify: Platform["notify"] = async (title, description, onClick) => {
 
   const notification = new Notification(title, {
     body: description ?? "",
-    icon: "https://opencode.ai/favicon-96x96-v3.png",
+    icon: notificationIcon(),
   })
 
   notification.onclick = () => {

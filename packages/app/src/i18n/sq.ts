@@ -78,8 +78,8 @@ export const dict = {
   "desktop.wsl.error.installDistro": "Instalimi i shpërndarjes dështoi: {{distro}}",
   "desktop.wsl.error.installOpencode": "Instalimi i VsWorker dështoi",
   "desktop.wsl.error.alreadyAdded": "{{distro}} është shtuar tashmë",
-  "desktop.wsl.error.opencodeMissing": "Opencode nuk është i instaluar në këtë shpërndarje",
-  "desktop.wsl.error.opencodeCannotRun": "Opencode është instaluar por nuk mund të ekzekutohet",
+  "desktop.wsl.error.opencodeMissing": "VsWorker nuk është i instaluar në këtë shpërndarje",
+  "desktop.wsl.error.opencodeCannotRun": "VsWorker është instaluar por nuk mund të ekzekutohet",
   "desktop.wsl.error.opencodeNotInstalled": "VsWorker nuk është i instaluar në {{distro}}",
   "desktop.wsl.error.updateVersion":
     "Përditësimi i VsWorker përfundoi, por {{distro}} ende raporton {{installed}}; pritet {{expected}}",

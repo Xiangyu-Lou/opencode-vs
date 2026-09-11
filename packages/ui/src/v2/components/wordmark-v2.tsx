@@ -1,6 +1,7 @@
 import { createUniqueId, type ComponentProps } from "solid-js"
 
-// Traced from reference/VsWork-text.png; regenerate with `bun run script/brand.ts`.
+// Traced by hand from reference/VsWork-text.png. `script/brand.ts` does not emit this file; update
+// the path here when the reference art changes. Keep in sync with packages/ui/src/components/logo.tsx.
 
 export function WordmarkV2(props: Pick<ComponentProps<"svg">, "class">) {
   const mask = createUniqueId()

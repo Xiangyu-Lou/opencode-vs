@@ -77,8 +77,8 @@ export const dict = {
   "desktop.wsl.error.installDistro": "Kan distributie niet installeren: {{distro}}",
   "desktop.wsl.error.installOpencode": "Installatie van VsWorker is mislukt",
   "desktop.wsl.error.alreadyAdded": "{{distro}} is al toegevoegd",
-  "desktop.wsl.error.opencodeMissing": "opencode is niet geïnstalleerd in deze distributie",
-  "desktop.wsl.error.opencodeCannotRun": "opencode is geïnstalleerd, maar kan niet worden uitgevoerd",
+  "desktop.wsl.error.opencodeMissing": "VsWorker is niet geïnstalleerd in deze distributie",
+  "desktop.wsl.error.opencodeCannotRun": "VsWorker is geïnstalleerd, maar kan niet worden uitgevoerd",
   "desktop.wsl.error.opencodeNotInstalled": "VsWorker is niet geïnstalleerd in {{distro}}",
   "desktop.wsl.error.updateVersion":
     "De VsWorker-update is voltooid, maar {{distro}} meldt nog steeds {{installed}}; verwacht: {{expected}}",

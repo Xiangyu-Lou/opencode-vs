@@ -78,8 +78,8 @@ export const dict = {
   "desktop.wsl.error.installDistro": "Չհաջողվեց տեղադրել բաշխում՝ {{distro}}",
   "desktop.wsl.error.installOpencode": "VsWorker տեղադրումը ձախողվեց",
   "desktop.wsl.error.alreadyAdded": "{{distro}} արդեն ավելացված է",
-  "desktop.wsl.error.opencodeMissing": "opencode-ը տեղադրված չէ այս բաշխում",
-  "desktop.wsl.error.opencodeCannotRun": "opencode-ը տեղադրված է, բայց չի կարող գործարկվել",
+  "desktop.wsl.error.opencodeMissing": "VsWorker-ը տեղադրված չէ այս բաշխում",
+  "desktop.wsl.error.opencodeCannotRun": "VsWorker-ը տեղադրված է, բայց չի կարող գործարկվել",
   "desktop.wsl.error.opencodeNotInstalled": "VsWorker տեղադրված չէ {{distro}}",
   "desktop.wsl.error.updateVersion":
     "VsWorker թարմացումն ավարտված է, բայց {{distro}}-ը դեռ հայտնում է {{installed}}; սպասվում է {{expected}}",

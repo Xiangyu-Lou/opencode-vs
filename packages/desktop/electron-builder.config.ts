@@ -42,18 +42,28 @@ const APP_IDS = {
 } as const
 
 const getBase = (appId: string): Configuration => ({
-  artifactName: "opencode-desktop-${os}-${arch}.${ext}",
+  artifactName: "vsworker-desktop-${os}-${arch}.${ext}",
   directories: {
     output: "dist",
     buildResources: "resources",
   },
-  // Linux launchers are .desktop files, so this is the desktop file name,
-  // not just the app id. For prod, app id "ai.opencode.desktop" becomes
-  // "ai.opencode.desktop.desktop".
-  // https://developer.gnome.org/documentation/guidelines/maintainer/integrating.html
-  // https://www.electron.build/docs/linux/
   extraMetadata: {
+    // Linux launchers are .desktop files, so this is the desktop file name,
+    // not just the app id. For prod, app id "ai.opencode.desktop" becomes
+    // "ai.opencode.desktop.desktop".
+    // https://developer.gnome.org/documentation/guidelines/maintainer/integrating.html
+    // https://www.electron.build/docs/linux/
     desktopName: `${appId}.desktop`,
+    // A one-click, per-user NSIS installer names its install directory after the package
+    // name rather than the product name, so the workspace name "@opencode-ai/desktop" would
+    // put the app in %LOCALAPPDATA%\Programs\@opencode-aidesktop (and the updater cache in
+    // @opencode-aidesktop-updater). Override it here instead of renaming the workspace.
+    name: "vsworker-desktop",
+    // Fills the NSIS installer description and the deb/rpm package description, both empty
+    // otherwise: packages/desktop/package.json carries no description.
+    description: "AI coding agent",
+    // Shown as the "Help link" of the Add/Remove Programs entry on Windows.
+    homepage: "https://github.com/Xiangyu-Lou/opencode-vs",
   },
   files: ["out/**/*", "resources/**/*", "!resources/opencode-cli*"],
   extraResources: [

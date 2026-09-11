@@ -1,7 +1,9 @@
 import { type ComponentProps } from "solid-js"
 
-// Brand marks. The icon geometry comes from reference/VsWorker.svg, the wordmark is traced from
-// reference/VsWork-text.png; regenerate both with `bun run script/brand.ts` after changing the art.
+// Brand marks, hand-maintained: the icon geometry is copied from reference/VsWorker.svg and the
+// wordmark is traced from reference/VsWork-text.png. `script/brand.ts` does NOT emit this file —
+// it only rasterizes the favicons, social cards and desktop icon sets — so update these paths by
+// hand when the reference art changes, or they will silently drift from it.
 
 const FLAME_GRADIENT_ID = "vsworker-mark-flame"
 

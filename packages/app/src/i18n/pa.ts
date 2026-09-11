@@ -81,8 +81,8 @@ export const dict = {
   "desktop.wsl.error.installDistro": "ڈسٹرو انسٹال نئیں ہو سکیا: {{distro}}",
   "desktop.wsl.error.installOpencode": "VsWorker دی تنصیب ناکام ہو گئی",
   "desktop.wsl.error.alreadyAdded": "{{distro}} پہلے ای شامل اے",
-  "desktop.wsl.error.opencodeMissing": "اس ڈسٹرو وچ opencode انسٹال نئیں اے",
-  "desktop.wsl.error.opencodeCannotRun": "opencode انسٹال اے پر چل نئیں سکیا",
+  "desktop.wsl.error.opencodeMissing": "اس ڈسٹرو وچ VsWorker انسٹال نئیں اے",
+  "desktop.wsl.error.opencodeCannotRun": "VsWorker انسٹال اے پر چل نئیں سکیا",
   "desktop.wsl.error.opencodeNotInstalled": "{{distro}} وچ VsWorker انسٹال نئیں اے",
   "desktop.wsl.error.updateVersion":
     "VsWorker دی اپ ڈیٹ پوری ہو گئی پر {{distro}} ہلے وی {{installed}} دس رہیا اے؛ {{expected}} چاہیدا سی",

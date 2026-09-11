@@ -78,8 +78,8 @@ export const dict: Record<string, string> = {
   "desktop.wsl.error.installDistro": "ডিস্ট্রো ইনস্টল করতে ব্যর্থ হয়েছে: {{distro}}",
   "desktop.wsl.error.installOpencode": "VsWorker ইনস্টলেশন ব্যর্থ হয়েছে৷",
   "desktop.wsl.error.alreadyAdded": "{{distro}} ইতিমধ্যেই যোগ করা হয়েছে৷",
-  "desktop.wsl.error.opencodeMissing": "এই ডিস্ট্রোতে opencode ইনস্টল করা নেই",
-  "desktop.wsl.error.opencodeCannotRun": "opencode ইনস্টল করা আছে কিন্তু চালানো যায়নি",
+  "desktop.wsl.error.opencodeMissing": "এই ডিস্ট্রোতে VsWorker ইনস্টল করা নেই",
+  "desktop.wsl.error.opencodeCannotRun": "VsWorker ইনস্টল করা আছে কিন্তু চালানো যায়নি",
   "desktop.wsl.error.opencodeNotInstalled": "VsWorker {{distro}} এ ইনস্টল করা নেই",
   "desktop.wsl.error.updateVersion":
     "VsWorker আপডেট শেষ হয়েছে কিন্তু {{distro}} এখনও রিপোর্ট করে {{installed}}; প্রত্যাশিত {{expected}}",

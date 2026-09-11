@@ -77,8 +77,8 @@ export const dict = {
   "desktop.wsl.error.installDistro": "Nepodarilo sa nainštalovať distribúciu: {{distro}}",
   "desktop.wsl.error.installOpencode": "Inštalácia VsWorker zlyhala",
   "desktop.wsl.error.alreadyAdded": "{{distro}} je už pridaná",
-  "desktop.wsl.error.opencodeMissing": "opencode nie je v tejto distribúcii nainštalovaný",
-  "desktop.wsl.error.opencodeCannotRun": "opencode je nainštalovaný, ale nedá sa spustiť",
+  "desktop.wsl.error.opencodeMissing": "VsWorker nie je v tejto distribúcii nainštalovaný",
+  "desktop.wsl.error.opencodeCannotRun": "VsWorker je nainštalovaný, ale nedá sa spustiť",
   "desktop.wsl.error.opencodeNotInstalled": "VsWorker nie je nainštalovaný v {{distro}}",
   "desktop.wsl.error.updateVersion":
     "Aktualizácia VsWorker bola dokončená, ale {{distro}} stále hlási {{installed}}; očakávané {{expected}}",

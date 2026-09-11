@@ -78,8 +78,8 @@ export const dict = {
   "desktop.wsl.error.installDistro": "Αποτυχία εγκατάστασης διανομής: {{distro}}",
   "desktop.wsl.error.installOpencode": "VsWorker η εγκατάσταση απέτυχε",
   "desktop.wsl.error.alreadyAdded": "{{distro}} έχει ήδη προστεθεί",
-  "desktop.wsl.error.opencodeMissing": "ο ανοιχτός κώδικας δεν είναι εγκατεστημένος σε αυτήν τη διανομή",
-  "desktop.wsl.error.opencodeCannotRun": "ο ανοιχτός κώδικας είναι εγκατεστημένος αλλά δεν ήταν δυνατή η εκτέλεση",
+  "desktop.wsl.error.opencodeMissing": "το VsWorker δεν είναι εγκατεστημένο σε αυτήν τη διανομή",
+  "desktop.wsl.error.opencodeCannotRun": "το VsWorker είναι εγκατεστημένο αλλά δεν ήταν δυνατή η εκτέλεση",
   "desktop.wsl.error.opencodeNotInstalled": "VsWorker δεν είναι εγκατεστημένο στο {{distro}}",
   "desktop.wsl.error.updateVersion":
     "VsWorker η ενημέρωση ολοκληρώθηκε αλλά το {{distro}} εξακολουθεί να αναφέρει {{installed}}; αναμενόμενο {{expected}}",
