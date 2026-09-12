@@ -1,4 +1,4 @@
-export * as VsWorkerBundle from "./bundle"
+export * as VsWorkerPluginBundle from "./plugins"
 
 import { truthy } from "@opencode-ai/core/flag/flag"
 

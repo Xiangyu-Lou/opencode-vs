@@ -1,0 +1,260 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/VsWorkerBundle",
+  "$defs": {
+    "McpLocalConfig": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["local"],
+          "description": "Type of MCP server connection"
+        },
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Command and arguments to run the MCP server"
+        },
+        "cwd": {
+          "type": "string",
+          "description": "Working directory for the MCP server process. Relative paths resolve from the workspace directory."
+        },
+        "environment": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Environment variables to set when running the MCP server"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable or disable the MCP server on startup"
+        },
+        "timeout": {
+          "exclusiveMinimum": 0,
+          "type": "integer",
+          "maximum": 9007199254740991,
+          "description": "Timeout in ms for MCP server requests. Defaults to 5000 (5 seconds) if not specified."
+        }
+      },
+      "required": ["type", "command"],
+      "additionalProperties": false
+    },
+    "McpOAuthConfig": {
+      "type": "object",
+      "properties": {
+        "clientId": {
+          "type": "string",
+          "description": "OAuth client ID. If not provided, dynamic client registration (RFC 7591) will be attempted."
+        },
+        "clientSecret": {
+          "type": "string",
+          "description": "OAuth client secret (if required by the authorization server)"
+        },
+        "scope": {
+          "type": "string",
+          "description": "OAuth scopes to request during authorization"
+        },
+        "callbackPort": {
+          "minimum": 1,
+          "maximum": 65535,
+          "type": "integer",
+          "description": "Port for the local OAuth callback server (default: 19876). Shorthand for redirectUri when only the port needs changing. Ignored if redirectUri is set."
+        },
+        "redirectUri": {
+          "type": "string",
+          "description": "OAuth redirect URI (default: http://127.0.0.1:19876/mcp/oauth/callback)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "McpRemoteConfig": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["remote"],
+          "description": "Type of MCP server connection"
+        },
+        "url": {
+          "type": "string",
+          "description": "URL of the remote MCP server"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable or disable the MCP server on startup"
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Headers to send with the request"
+        },
+        "oauth": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/McpOAuthConfig"
+            },
+            {
+              "type": "boolean",
+              "enum": [false]
+            }
+          ],
+          "description": "OAuth authentication configuration for the MCP server. Set to false to disable OAuth auto-detection."
+        },
+        "timeout": {
+          "exclusiveMinimum": 0,
+          "type": "integer",
+          "maximum": 9007199254740991,
+          "description": "Timeout in ms for MCP server requests. Defaults to 5000 (5 seconds) if not specified."
+        }
+      },
+      "required": ["type", "url"],
+      "additionalProperties": false
+    },
+    "VsWorkerBundle": {
+      "type": "object",
+      "properties": {
+        "$schema": {
+          "type": "string"
+        },
+        "plugins": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Stable identity used in opencode.json under vsworker.plugins, and in the CLI"
+              },
+              "source": {
+                "type": "string",
+                "enum": ["npm", "github", "local"],
+                "description": "npm registry package, GitHub repository, or a plugin vendored under vsworker/plugins"
+              },
+              "package": {
+                "type": "string",
+                "description": "npm package name, required for npm and github sources"
+              },
+              "version": {
+                "type": "string",
+                "description": "Exact version to pin, required for npm sources"
+              },
+              "repo": {
+                "type": "string",
+                "description": "owner/repo, required for github sources"
+              },
+              "ref": {
+                "type": "string",
+                "description": "Full 40 character commit sha to pin, required for github sources"
+              },
+              "path": {
+                "type": "string",
+                "description": "Entrypoint relative to vsworker/, for local sources. Defaults to plugins/<id>/index.ts"
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["server", "tui"],
+                "description": "Force the plugin kind instead of detecting it from the package exports"
+              },
+              "enabled": {
+                "type": "boolean",
+                "description": "Include this entry in the build. Defaults to true. False removes it from the bundle entirely"
+              },
+              "defaultEnabled": {
+                "type": "boolean",
+                "description": "Use this entry unless a user turns it off. Defaults to true"
+              },
+              "options": {
+                "type": "object",
+                "description": "Options passed to the plugin, overridable per user in opencode.json"
+              },
+              "description": {
+                "type": "string",
+                "description": "Why this plugin is bundled"
+              }
+            },
+            "required": ["id", "source"],
+            "additionalProperties": false
+          },
+          "description": "Plugins bundled into VsWorker builds"
+        },
+        "mcp": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Server name. Users see it as the mcp.<id> key in opencode.json, and its tools are prefixed with it"
+              },
+              "config": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/McpLocalConfig"
+                  },
+                  {
+                    "$ref": "#/$defs/McpRemoteConfig"
+                  }
+                ],
+                "description": "The mcp.<id> value exactly as it would appear in opencode.json. {env:VAR} and {file:path} are substituted at runtime, relative to the global config directory"
+              },
+              "enabled": {
+                "type": "boolean",
+                "description": "Include this entry in the build. Defaults to true. False removes it from the bundle entirely"
+              },
+              "defaultEnabled": {
+                "type": "boolean",
+                "description": "Use this entry unless a user turns it off. Defaults to true"
+              },
+              "description": {
+                "type": "string",
+                "description": "Why this server is bundled"
+              }
+            },
+            "required": ["id", "config"],
+            "additionalProperties": false
+          },
+          "description": "MCP servers bundled into VsWorker builds"
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Skill name. Must match the name in the skill's SKILL.md frontmatter"
+              },
+              "path": {
+                "type": "string",
+                "description": "Skill directory relative to vsworker/. Defaults to skills/<id>"
+              },
+              "enabled": {
+                "type": "boolean",
+                "description": "Include this entry in the build. Defaults to true. False removes it from the bundle entirely"
+              },
+              "defaultEnabled": {
+                "type": "boolean",
+                "description": "Use this entry unless a user turns it off. Defaults to true"
+              },
+              "description": {
+                "type": "string",
+                "description": "Why this skill is bundled"
+              }
+            },
+            "required": ["id"],
+            "additionalProperties": false
+          },
+          "description": "Skills bundled into VsWorker builds, vendored under vsworker/skills"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allowComments": true,
+  "allowTrailingCommas": true
+}

@@ -20,12 +20,12 @@ jobs:
       - name: Setup Bun
         uses: ./.github/actions/setup-bun
 
-      # A dropped seam ships a build with no bundled plugins and breaks nothing else, so check it first.
+      # A dropped seam ships a build with part of the bundle missing and breaks nothing else, so check it first.
       - name: Check upstream seams
-        run: bun run --cwd vsworker plugins check --seams
+        run: bun run --cwd vsworker bundle check --seams
 
       - name: Check the generated bundle is current
-        run: bun run --cwd vsworker plugins check
+        run: bun run --cwd vsworker bundle check
 
       - name: Typecheck
         run: bun run --cwd vsworker typecheck
@@ -38,11 +38,20 @@ jobs:
         run: bun test test/vsworker
         working-directory: packages/opencode
 
-      # Proves the plugins actually reach a shipped artifact, not just the dev server.
+      # Proves the bundle actually reaches a shipped artifact, not just the dev server.
       - name: Build the CLI binary
         run: bun run script/build.ts --single --skip-install --skip-embed-web-ui
         working-directory: packages/opencode
 
       - name: Smoke test the bundle in the binary
-        run: ./dist/opencode-linux-x64/bin/opencode vsworker plugins list
+        run: |
+          set -euo pipefail
+          BIN=./dist/opencode-linux-x64/bin/opencode
+          "$BIN" vsworker plugins list
+          "$BIN" vsworker mcp list
+          "$BIN" vsworker skills list
+          # Enabling a skill has to write the cache directory, which is the half that only exists at runtime.
+          "$BIN" vsworker skills enable hello -g
+          "$BIN" vsworker skills list
+          test -f "${XDG_CACHE_HOME:-$HOME/.cache}/opencode/vsworker/skills/hello/SKILL.md"
         working-directory: packages/opencode

@@ -33,7 +33,7 @@ import type { WorkspaceAdapter } from "@/control-plane/types"
 import { RuntimeFlags } from "@/effect/runtime-flags"
 import { EventV2Bridge } from "@/event-v2-bridge"
 import { InstallationChannel } from "@opencode-ai/core/installation/version"
-import { VsWorkerPlugins } from "@vsworker/plugins" // vsworker-seam
+import { VsWorkerPlugins } from "@vsworker/bundle" // vsworker-seam
 import { ConfigPlugin } from "@/config/plugin" // vsworker-seam
 
 type State = {

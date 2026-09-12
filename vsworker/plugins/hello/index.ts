@@ -1,7 +1,7 @@
 import type { PluginModule } from "@opencode-ai/plugin"
 
 // Template + smoke test for the bundling pipeline. It is bundled into every build but is off by default
-// (see defaultEnabled in vsworker/plugins.jsonc), so a release is unaffected until someone turns it on with
+// (see defaultEnabled in vsworker/bundle.jsonc), so a release is unaffected until someone turns it on with
 // `opencode vsworker plugins enable hello`. Copy this directory as the starting point for a real in-house
 // plugin, and read vsworker/README.md for the constraints a bundled plugin has to satisfy.
 export default {

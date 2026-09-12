@@ -21,5 +21,9 @@ export const Info = Schema.Struct({
     description:
       "Overrides for plugins bundled with VsWorker, keyed by plugin id. Set an id to false to turn that plugin off",
   }),
+  skills: Schema.optional(Schema.Record(Schema.String, Schema.Boolean)).annotate({
+    description:
+      "Overrides for skills bundled with VsWorker, keyed by skill name. Set a name to false to turn that skill off",
+  }),
 }).annotate({ identifier: "VsWorker" })
 export type Info = Schema.Schema.Type<typeof Info>

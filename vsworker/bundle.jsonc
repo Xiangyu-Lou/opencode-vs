@@ -1,0 +1,25 @@
+{
+  // Plugins, MCP servers, and skills bundled into VsWorker builds. Edit this file, then run:
+  //   bun run --cwd vsworker bundle generate
+  // See vsworker/README.md for the field reference and the constraints a bundled entry must satisfy.
+  "$schema": "./bundle.schema.json",
+  "plugins": [
+    {
+      "id": "hello",
+      "source": "local",
+      "defaultEnabled": false,
+      "description": "Template and smoke test for the bundling pipeline. Off by default.",
+    },
+  ],
+  // Each entry's "config" is an mcp.<id> value exactly as it would appear in opencode.json. Keep secrets out:
+  // use {env:VAR} or {file:path}, both substituted at runtime against the user's global config directory.
+  "mcp": [],
+  // Skills are vendored under vsworker/skills/<id>/. Add one with: bundle import skill <name>
+  "skills": [
+    {
+      "id": "hello",
+      "defaultEnabled": false,
+      "description": "Template and smoke test for skill bundling. Off by default.",
+    },
+  ],
+}

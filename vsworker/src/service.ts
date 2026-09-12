@@ -2,7 +2,7 @@ export * as VsWorkerPluginsService from "./service"
 
 import { LayerNode } from "@opencode-ai/core/effect/layer-node"
 import { Context, Layer } from "effect"
-import { prepare, type Entry } from "./bundle"
+import { prepare, type Entry } from "./plugins"
 import { server } from "./server.gen"
 import { tui } from "./tui.gen"
 

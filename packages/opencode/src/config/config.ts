@@ -36,6 +36,7 @@ import { ConfigVariable } from "./variable"
 import { ConfigV2Compat } from "./v2-compat"
 import { Npm } from "@opencode-ai/core/npm"
 import { withTransientReadRetry } from "@/util/effect-http-client"
+import { VsWorkerMcp } from "@vsworker/bundle/mcp" // vsworker-seam
 
 // Custom merge function that concatenates array fields instead of replacing them
 // Keep remeda's deep conditional merge type out of hot config-loading paths; TS profiling showed it dominates here.
@@ -182,6 +183,7 @@ const layer = Layer.effect(
     const env = yield* Env.Service
     const npmSvc = yield* Npm.Service
     const http = yield* HttpClient.HttpClient
+    const vsworkerMcp = yield* VsWorkerMcp.Service // vsworker-seam
 
     const readConfigFile = (filepath: string) => fs.readFileStringSafe(filepath).pipe(Effect.orDie)
 
@@ -547,6 +549,30 @@ const layer = Layer.effect(
           )
         }
 
+        // vsworker-seam: MCP servers bundled into this build join the merged config after every file and remote
+        // source, so the MCP runtime, `opencode mcp list`, and the TUI all see them. A user entry that carries a
+        // `type` wins outright; a bare `{ "enabled": false }` only toggles the bundled definition. Substitution
+        // normally runs over raw config text before it is parsed, so the bundle makes its own pass here.
+        const bundledMcp = yield* Effect.promise(() =>
+          VsWorkerMcp.resolve({
+            bundle: vsworkerMcp.bundle,
+            user: result.mcp,
+            disabled: Flag.OPENCODE_PURE,
+            substitute: (text) =>
+              ConfigVariable.substitute({
+                text,
+                type: "virtual",
+                source: VsWorkerMcp.SOURCE,
+                dir: Global.Path.config,
+                missing: "empty",
+              }),
+          }),
+        )
+        result.mcp = bundledMcp.mcp
+        for (const warning of bundledMcp.warnings) {
+          yield* Effect.logWarning("failed to substitute a bundled mcp definition", { warning })
+        }
+
         for (const [name, mode] of Object.entries(result.mode ?? {})) {
           result.agent = mergeDeep(result.agent ?? {}, {
             [name]: {
@@ -695,7 +721,7 @@ const layer = Layer.effect(
 export const node = LayerNode.make({
   service: Service,
   layer: layer,
-  deps: [FSUtil.node, Auth.node, Account.node, Env.node, Npm.node, httpClient],
+  deps: [FSUtil.node, Auth.node, Account.node, Env.node, Npm.node, httpClient, VsWorkerMcp.node], // vsworker-seam
 })
 
 export * as Config from "./config"

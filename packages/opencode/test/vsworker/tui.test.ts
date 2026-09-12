@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, spyOn, test } from "bun:test"
-import { VsWorkerPlugins } from "@vsworker/plugins"
+import { VsWorkerPlugins } from "@vsworker/bundle"
 import { tmpdir } from "../fixture/fixture"
 import { createTuiPluginApi } from "../fixture/tui-plugin"
 import { mockTuiRuntime } from "../fixture/tui-runtime"

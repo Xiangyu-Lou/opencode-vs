@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { DISABLE_ENV, describe as describeBundle, normalize, prepare, select, type Raw } from "../src/bundle"
+import { DISABLE_ENV, describe as describeBundle, normalize, prepare, select, type Raw } from "../src/plugins"
 
 function raw(input: Partial<Raw> & Pick<Raw, "id">): Raw {
   return {

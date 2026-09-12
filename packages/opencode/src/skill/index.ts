@@ -17,6 +17,7 @@ import { Glob } from "@opencode-ai/core/util/glob"
 import { Discovery } from "./discovery"
 import { isRecord } from "@/util/record"
 import { escapeHtml } from "@/util/html"
+import { VsWorkerSkills } from "@vsworker/bundle/skills" // vsworker-seam
 
 const CLAUDE_EXTERNAL_DIR = ".claude"
 const AGENTS_EXTERNAL_DIR = ".agents"
@@ -256,9 +257,10 @@ const layer = Layer.effect(
     const fsys = yield* FSUtil.Service
     const global = yield* Global.Service
     const flags = yield* RuntimeFlags.Service
+    const bundled = yield* VsWorkerSkills.Service // vsworker-seam
     const discovered = yield* InstanceState.make(
       Effect.fn("Skill.discovery")(function* (ctx) {
-        return yield* discoverSkills(
+        const found = yield* discoverSkills(
           config,
           discovery,
           fsys,
@@ -268,6 +270,18 @@ const layer = Layer.effect(
           ctx.directory,
           ctx.worktree,
         )
+        // vsworker-seam: skills bundled into this build are written to the cache directory on first use, because
+        // the skill tool and the slash commands both need a real directory. Their dirs join the discovered ones
+        // here so they reach the external_directory allowlist; `state` below registers the skills themselves.
+        const cfg = yield* config.get()
+        const seeded = yield* bundled.ensure(
+          VsWorkerSkills.select({ bundle: bundled.bundle, user: cfg.vsworker?.skills, disabled: flags.pure }),
+        )
+        return {
+          matches: found.matches,
+          dirs: [...found.dirs, ...seeded.map((item) => item.dir)],
+          bundled: seeded.map((item) => item.location),
+        }
       }),
     )
     const state = yield* InstanceState.make(
@@ -281,7 +295,12 @@ const layer = Layer.effect(
           location: "<built-in>",
           content: CUSTOMIZE_OPENCODE_SKILL_BODY,
         }
-        yield* loadSkills(s, yield* InstanceState.get(discovered), events)
+        const found = yield* InstanceState.get(discovered)
+        // vsworker-seam: bundled skills register before disk discovery, so a skill of the same name found on disk
+        // overrides them. Disk discovery loads concurrently and last write wins, so seeding first is the only way
+        // to put the bundle deterministically at the bottom.
+        for (const location of found.bundled) yield* add(s, location, events)
+        yield* loadSkills(s, found, events)
         return s
       }),
     )
@@ -348,7 +367,16 @@ export function fmt(list: Info[], opts: { verbose: boolean }) {
 export const node = LayerNode.make({
   service: Service,
   layer: layer,
-  deps: [Discovery.node, Config.node, EventV2Bridge.node, FSUtil.node, Global.node, RuntimeFlags.node],
+  // vsworker-seam: VsWorkerSkills.node
+  deps: [
+    Discovery.node,
+    Config.node,
+    EventV2Bridge.node,
+    FSUtil.node,
+    Global.node,
+    RuntimeFlags.node,
+    VsWorkerSkills.node,
+  ],
 })
 
 export * as Skill from "."

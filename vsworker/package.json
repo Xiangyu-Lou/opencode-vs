@@ -1,16 +1,18 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "@vsworker/plugins",
+  "name": "@vsworker/bundle",
   "type": "module",
   "license": "MIT",
   "private": true,
   "scripts": {
     "typecheck": "tsgo --noEmit",
     "test": "bun test",
-    "plugins": "bun run script/plugins.ts"
+    "bundle": "bun run script/bundle.ts"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./mcp": "./src/mcp.ts",
+    "./skills": "./src/skills.ts"
   },
   "devDependencies": {
     "@tsconfig/bun": "catalog:",

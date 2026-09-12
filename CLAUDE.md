@@ -186,15 +186,21 @@ Prompt admission is durable and separate from execution: `SessionV2.prompt(...)`
 - UI and core product features require design review with the core team before implementation; bug fixes, providers, LSP/formatter additions, and docs are the expected contribution types.
 - New providers go to `github.com/anomalyco/models.dev`, not here.
 
-## Bundled plugins (`vsworker/`)
+## Bundled plugins, MCP servers, and skills (`vsworker/`)
 
-This fork ships a curated set of plugins compiled into the product. The manifest is `vsworker/plugins.jsonc`;
-`bun run --cwd vsworker plugins generate` regenerates `vsworker/src/*.gen.ts`, `vsworker/plugins.schema.json`,
-and the `dependencies` block of `vsworker/package.json`, then runs `bun install`. Commit all of those with
-`bun.lock`. `plugins check` is the CI drift gate and `plugins check --seams` verifies the seven
-`// vsworker-seam` edits in upstream files survived the last merge.
+This fork ships a curated set of plugins, MCP server definitions, and skills compiled into the product. The
+manifest is `vsworker/bundle.jsonc`; `bun run --cwd vsworker bundle generate` regenerates `vsworker/src/*.gen.ts`,
+`vsworker/bundle.schema.json`, and the `dependencies` block of `vsworker/package.json`, then runs `bun install`.
+Commit all of those, plus anything under `vsworker/skills/`, with `bun.lock`. `bundle check` is the CI drift gate
+and `bundle check --seams` verifies the seven marked edits in upstream files survived the last merge (nine files
+are touched; the two `package.json` ones cannot carry a comment).
 
-Read `vsworker/README.md` before adding a plugin (the manifest reference and the constraints a compiled-in
-plugin has to satisfy) and `vsworker/UPSTREAM.md` before merging upstream (the seam inventory and the merge
-runbook). Upstream suites keep the stock plugin set because `packages/opencode/test/preload.ts` sets
-`VSWORKER_DISABLE_BUNDLED_PLUGINS=1`; tests under `packages/opencode/test/vsworker/` clear it themselves.
+Skills are vendored under `vsworker/skills/<id>/` and written to `~/.cache/opencode/vsworker/skills/` at runtime,
+because the skill tool needs a real directory. MCP entries carry a definition, not a server: keep credentials out
+of them and use `{env:VAR}` / `{file:path}`, which are substituted at config load.
+
+Read `vsworker/README.md` before adding anything (the manifest reference, the `bundle import` helpers, and the
+constraints compiled-in content has to satisfy) and `vsworker/UPSTREAM.md` before merging upstream (the seam
+inventory and the merge runbook). Upstream suites keep the stock sets because `packages/opencode/test/preload.ts`
+sets `VSWORKER_DISABLE_BUNDLED_PLUGINS`, `_MCP`, and `_SKILLS`; tests under `packages/opencode/test/vsworker/`
+clear them themselves.
