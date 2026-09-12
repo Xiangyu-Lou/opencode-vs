@@ -1,0 +1,48 @@
+name: vsworker
+
+on:
+  push:
+    branches: [vsworker]
+  pull_request:
+    branches: [vsworker]
+
+concurrency:
+  group: vsworker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      # A dropped seam ships a build with no bundled plugins and breaks nothing else, so check it first.
+      - name: Check upstream seams
+        run: bun run --cwd vsworker plugins check --seams
+
+      - name: Check the generated bundle is current
+        run: bun run --cwd vsworker plugins check
+
+      - name: Typecheck
+        run: bun run --cwd vsworker typecheck
+
+      - name: Test the bundle logic
+        run: bun test
+        working-directory: vsworker
+
+      - name: Test bundling inside the host
+        run: bun test test/vsworker
+        working-directory: packages/opencode
+
+      # Proves the plugins actually reach a shipped artifact, not just the dev server.
+      - name: Build the CLI binary
+        run: bun run script/build.ts --single --skip-install --skip-embed-web-ui
+        working-directory: packages/opencode
+
+      - name: Smoke test the bundle in the binary
+        run: ./dist/opencode-linux-x64/bin/opencode vsworker plugins list
+        working-directory: packages/opencode

@@ -33,6 +33,8 @@ import type { WorkspaceAdapter } from "@/control-plane/types"
 import { RuntimeFlags } from "@/effect/runtime-flags"
 import { EventV2Bridge } from "@/event-v2-bridge"
 import { InstallationChannel } from "@opencode-ai/core/installation/version"
+import { VsWorkerPlugins } from "@vsworker/plugins" // vsworker-seam
+import { ConfigPlugin } from "@/config/plugin" // vsworker-seam
 
 type State = {
   hooks: Hooks[]
@@ -130,6 +132,7 @@ const layer = Layer.effect(
     const events = yield* EventV2Bridge.Service
     const config = yield* Config.Service
     const flags = yield* RuntimeFlags.Service
+    const bundled = yield* VsWorkerPlugins.Service // vsworker-seam
 
     const state = yield* InstanceState.make<State>(
       Effect.fn("Plugin.state")(function* (ctx) {
@@ -176,6 +179,32 @@ const layer = Layer.effect(
             Effect.option,
           )
           if (init._tag === "Some") hooks.push(init.value)
+        }
+
+        // vsworker-seam: plugins bundled into this build load after the built-ins and before external ones,
+        // so anything the user declares in `plugin` still wins.
+        const bundledExternal = new Set(
+          (cfg.plugin ?? []).map((item) => parsePluginSpecifier(ConfigPlugin.pluginSpecifier(item)).pkg),
+        )
+        for (const load of VsWorkerPlugins.select({
+          bundle: bundled.server,
+          user: cfg.vsworker?.plugins,
+          external: bundledExternal,
+          disabled: flags.pure || flags.disableDefaultPlugins,
+        })) {
+          yield* Effect.tryPromise({
+            try: () => applyPlugin(load, input, hooks),
+            catch: errorMessage,
+          }).pipe(
+            Effect.tapError((error) =>
+              Effect.logError("failed to load bundled plugin", { path: load.spec, error }).pipe(
+                Effect.andThen(
+                  Effect.sync(() => publishPluginError(`Failed to load bundled plugin ${load.spec}: ${error}`)),
+                ),
+              ),
+            ),
+            Effect.ignore,
+          )
         }
 
         const plugins = flags.pure ? [] : (cfg.plugin_origins ?? [])
@@ -312,7 +341,7 @@ const layer = Layer.effect(
 export const node = LayerNode.make({
   service: Service,
   layer: layer,
-  deps: [EventV2Bridge.node, Config.node, RuntimeFlags.node],
+  deps: [EventV2Bridge.node, Config.node, RuntimeFlags.node, VsWorkerPlugins.node], // vsworker-seam
 })
 
 export * as Plugin from "."

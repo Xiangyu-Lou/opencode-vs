@@ -19,6 +19,7 @@ import { errorData, errorMessage } from "@opencode-ai/tui/util/error"
 import { isRecord } from "@opencode-ai/tui/util/record"
 import { resolveHostAttentionSoundPaths } from "@/config/tui-host-attention"
 import {
+  parsePluginSpecifier,
   readPackageThemes,
   readPluginId,
   readV1Plugin,
@@ -41,6 +42,7 @@ import { ConfigPlugin } from "@/config/plugin"
 import { ConfigPluginV1 } from "@opencode-ai/core/v1/config/plugin"
 import { createCommandShim } from "@opencode-ai/tui/plugin/command-shim"
 import { RuntimeFlags } from "@/effect/runtime-flags"
+import { VsWorkerPlugins } from "@vsworker/plugins" // vsworker-seam
 import { Effect } from "effect"
 import { createPluginRuntime, type PluginRuntime, type TuiPluginHost } from "@opencode-ai/tui/plugin/runtime"
 
@@ -1100,6 +1102,46 @@ async function load(input: {
         themes: {},
         plugin: entry.module.tui,
         enabled: item.enabled ?? true,
+      })
+    }
+
+    // vsworker-seam: TUI plugins bundled into this build register after the built-ins and before external
+    // ones. They keep their own id, so tui.json plugin_enabled and the plugin manager toggle them like any
+    // other plugin.
+    const bundledExternal = new Set(
+      pluginOrigins.map((origin) => parsePluginSpecifier(ConfigPlugin.pluginSpecifier(origin.spec)).pkg),
+    )
+    for (const item of VsWorkerPlugins.selectTui({
+      bundle: VsWorkerPlugins.bundle.tui,
+      external: bundledExternal,
+      disabled: Flag.OPENCODE_PURE || flags.disableDefaultPlugins,
+    })) {
+      const module = await Promise.resolve()
+        .then(() => readV1Plugin(item.mod, item.spec, "tui") as TuiPluginModule)
+        .catch((error) => {
+          fail("failed to load bundled tui plugin", { path: item.spec, error })
+          return
+        })
+      if (!module) continue
+      const load: PluginLoad = {
+        options: item.options,
+        spec: item.spec,
+        target: item.spec,
+        retry: false,
+        source: "npm",
+        id: item.id,
+        module,
+        origin: { spec: item.spec, scope: "global", source: item.spec },
+        plugin_root: cwd,
+        theme_files: [],
+      }
+      addPluginEntry(next, {
+        id: item.id,
+        load,
+        meta: createMeta(load.source, load.spec, load.target, undefined, load.id),
+        themes: {},
+        plugin: module.tui,
+        enabled: item.enabled,
       })
     }
 

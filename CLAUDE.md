@@ -185,3 +185,16 @@ Prompt admission is durable and separate from execution: `SessionV2.prompt(...)`
 - Every PR must reference an issue (`Fixes #123`), stay small, explain how it was verified, and include screenshots for UI changes. Long AI-generated descriptions get PRs closed.
 - UI and core product features require design review with the core team before implementation; bug fixes, providers, LSP/formatter additions, and docs are the expected contribution types.
 - New providers go to `github.com/anomalyco/models.dev`, not here.
+
+## Bundled plugins (`vsworker/`)
+
+This fork ships a curated set of plugins compiled into the product. The manifest is `vsworker/plugins.jsonc`;
+`bun run --cwd vsworker plugins generate` regenerates `vsworker/src/*.gen.ts`, `vsworker/plugins.schema.json`,
+and the `dependencies` block of `vsworker/package.json`, then runs `bun install`. Commit all of those with
+`bun.lock`. `plugins check` is the CI drift gate and `plugins check --seams` verifies the seven
+`// vsworker-seam` edits in upstream files survived the last merge.
+
+Read `vsworker/README.md` before adding a plugin (the manifest reference and the constraints a compiled-in
+plugin has to satisfy) and `vsworker/UPSTREAM.md` before merging upstream (the seam inventory and the merge
+runbook). Upstream suites keep the stock plugin set because `packages/opencode/test/preload.ts` sets
+`VSWORKER_DISABLE_BUNDLED_PLUGINS=1`; tests under `packages/opencode/test/vsworker/` clear it themselves.

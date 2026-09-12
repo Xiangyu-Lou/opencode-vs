@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/VsWorkerPlugins",
+  "$defs": {
+    "VsWorkerPlugins": {
+      "type": "object",
+      "properties": {
+        "$schema": {
+          "type": "string"
+        },
+        "plugins": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Stable identity used in opencode.json under vsworker.plugins, and in the CLI"
+              },
+              "source": {
+                "type": "string",
+                "enum": ["npm", "github", "local"],
+                "description": "npm registry package, GitHub repository, or a plugin vendored under vsworker/plugins"
+              },
+              "package": {
+                "type": "string",
+                "description": "npm package name, required for npm and github sources"
+              },
+              "version": {
+                "type": "string",
+                "description": "Exact version to pin, required for npm sources"
+              },
+              "repo": {
+                "type": "string",
+                "description": "owner/repo, required for github sources"
+              },
+              "ref": {
+                "type": "string",
+                "description": "Full 40 character commit sha to pin, required for github sources"
+              },
+              "path": {
+                "type": "string",
+                "description": "Entrypoint relative to vsworker/, for local sources. Defaults to plugins/<id>/index.ts"
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["server", "tui"],
+                "description": "Force the plugin kind instead of detecting it from the package exports"
+              },
+              "enabled": {
+                "type": "boolean",
+                "description": "Include this plugin in the build. Defaults to true. False removes it from the bundle entirely"
+              },
+              "defaultEnabled": {
+                "type": "boolean",
+                "description": "Run this plugin unless a user turns it off. Defaults to true"
+              },
+              "options": {
+                "type": "object",
+                "description": "Options passed to the plugin, overridable per user in opencode.json"
+              },
+              "description": {
+                "type": "string",
+                "description": "Why this plugin is bundled"
+              }
+            },
+            "required": ["id", "source"],
+            "additionalProperties": false
+          },
+          "description": "Plugins bundled into VsWorker builds"
+        }
+      },
+      "required": ["plugins"],
+      "additionalProperties": false
+    }
+  },
+  "allowComments": true,
+  "allowTrailingCommas": true
+}
