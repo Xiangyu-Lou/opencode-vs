@@ -1,7 +1,7 @@
 # Staying mergeable with upstream OpenCode
 
-VsWorker is a fork of `anomalyco/opencode`. Everything the fork adds lives in `vsworker/`, except for twelve
-small edits inside upstream files. Ten of them carry a `// vsworker-seam` comment so a merge that drops one
+VsWorker is a fork of `anomalyco/opencode`. Everything the fork adds lives in `vsworker/`, except for fifteen
+small edits inside upstream files. Thirteen of them carry a `// vsworker-seam` comment so a merge that drops one
 can be detected mechanically.
 
 ## Seam inventory
@@ -17,6 +17,9 @@ can be detected mechanically.
 | `packages/opencode/src/skill/index.ts`        | yields `VsWorkerSkills.Service`, materializes the bundled skills and seeds them before disk discovery, adds `VsWorkerSkills.node` to `deps`          |
 | `packages/opencode/src/index.ts`              | registers the `vsworker` CLI command                                                                                                                 |
 | `packages/opencode/test/preload.ts`           | sets the three `VSWORKER_DISABLE_BUNDLED_*` variables so upstream suites see the stock sets; writes the cache marker under the renamed app dir       |
+| `packages/opencode/src/tool/shell.ts`         | yields `Skill.Service`, and `shellEnv` takes the command so `VsWorkerEnv.resolve` can add each matching skill's `env.json` on top of the environment |
+| `packages/opencode/src/tool/skill.ts`         | appends one line naming the variables the skill's `env.json` provides                                                                                |
+| `packages/opencode/test/tool/shell.test.ts`   | adds `Skill.node` to the tool's layer group, because `ShellTool` now yields it                                                                       |
 | `packages/opencode/src/installation/index.ts` | yields `VsWorkerRelease.Service` and freezes `method`/`latest`/`upgrade` for a built release, adds `VsWorkerRelease.node` to `deps`                  |
 | `packages/core/src/global.ts`                 | `app` is `vsworker`, so the fork owns its XDG directories instead of sharing opencode's                                                              |
 | `packages/opencode/test/cli/mcp-add.test.ts`  | asserts the global config path under the renamed app dir                                                                                             |
@@ -69,7 +72,10 @@ Expected conflict hotspots, in rough order of likelihood:
    bundled-MCP precedence rules.
 4. `packages/opencode/src/skill/index.ts` — the seeding loop has to stay before `loadSkills`, which is what makes
    a disk skill of the same name win.
-5. The two `package.json` dependency lines.
+5. `packages/opencode/src/tool/shell.ts` — `shellEnv` has to keep receiving the command. Upstream changes this
+   function's signature rarely, but a merge that reverts it to `(ctx, cwd)` compiles only after the call site is
+   reverted too, which is the shape to watch for.
+6. The two `package.json` dependency lines.
 
 If `bundle check --seams` reports a missing seam, reapply it from the table above before shipping. A dropped seam
 does not fail typecheck or tests; it silently ships a build with part of the bundle missing.

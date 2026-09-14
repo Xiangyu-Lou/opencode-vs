@@ -4,6 +4,7 @@ import { Ripgrep } from "@opencode-ai/core/ripgrep"
 import { Skill } from "../skill"
 import * as Tool from "./tool"
 import DESCRIPTION from "./skill.txt"
+import { VsWorkerEnv } from "@vsworker/bundle/env" // vsworker-seam
 
 export const Parameters = Schema.Struct({
   name: Schema.String.annotate({ description: "The name of the skill from available_skills" }),
@@ -42,6 +43,15 @@ export const SkillTool = Tool.define(
             limit: 10,
           })
 
+          // vsworker-seam: the model is told which variables this skill's env.json provides, by name only, so it
+          // neither sets them by hand nor prints their values.
+          const env = yield* Effect.promise(() => VsWorkerEnv.describe(dir))
+          const environment = env
+            ? [
+                `Environment: ${env.keys.join(", ")} from ${VsWorkerEnv.FILE} in this directory are exported automatically to bash commands that run inside it or name a path inside it. Do not set them yourself.`,
+              ]
+            : []
+
           return {
             title: `Loaded skill: ${info.name}`,
             output: [
@@ -52,6 +62,7 @@ export const SkillTool = Tool.define(
               "",
               `Base directory for this skill: ${base}`,
               "Relative paths in this skill (e.g., scripts/, reference/) are relative to this base directory.",
+              ...environment, // vsworker-seam
               "Note: file list is sampled.",
               "",
               "<skill_files>",

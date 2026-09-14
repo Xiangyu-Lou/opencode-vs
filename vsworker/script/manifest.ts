@@ -3,6 +3,7 @@ import { existsSync, readFileSync, statSync } from "fs"
 import { Schema } from "effect"
 import { ConfigMarkdown } from "@opencode-ai/core/config/markdown"
 import { ConfigMCPV1 } from "@opencode-ai/core/v1/config/mcp"
+import { VsWorkerEnv } from "../src/env"
 import { parse as parseJsonc, type ParseError } from "jsonc-parser"
 import semver from "semver"
 
@@ -205,6 +206,16 @@ export function validate(manifest: Manifest) {
     }
     if (typeof data.description !== "string" || !data.description.trim()) {
       problems.push(`${at}: SKILL.md frontmatter needs a description, the model picks skills by it`)
+    }
+
+    // env.json is optional, but a malformed one exports nothing at runtime and would fail silently. The runtime
+    // parser is used here so a file that loads at build time loads in the product too.
+    const envFile = path.join(absolute, VsWorkerEnv.FILE)
+    if (existsSync(envFile)) {
+      const source = `vsworker/${dir}/${VsWorkerEnv.FILE}`
+      for (const problem of VsWorkerEnv.parse(readFileSync(envFile, "utf8"), source).problems) {
+        problems.push(`${at}: ${problem}`)
+      }
     }
   }
 

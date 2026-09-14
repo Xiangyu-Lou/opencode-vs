@@ -11,6 +11,7 @@
   },
   "exports": {
     ".": "./src/index.ts",
+    "./env": "./src/env.ts",
     "./mcp": "./src/mcp.ts",
     "./release": "./src/release.ts",
     "./skills": "./src/skills.ts"

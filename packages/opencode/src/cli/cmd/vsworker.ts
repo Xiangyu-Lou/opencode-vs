@@ -3,6 +3,7 @@ import { Flock } from "@opencode-ai/core/util/flock"
 import { Global } from "@opencode-ai/core/global"
 import { VsWorkerPlugins } from "@vsworker/bundle"
 import { VsWorkerMcp } from "@vsworker/bundle/mcp"
+import { VsWorkerEnv } from "@vsworker/bundle/env"
 import { VsWorkerSkills } from "@vsworker/bundle/skills"
 import { Effect } from "effect"
 import { applyEdits, modify } from "jsonc-parser"
@@ -206,12 +207,20 @@ export const VsWorkerSkillsListCommand = effectCmd({
     UI.empty()
     prompts.intro("Bundled skills")
     const rows = yield* skillState()
+    // env.json is what a colleague most often needs to check after installing a build, so the count of variables
+    // a skill provides is shown next to its directory. Names and values stay out of the list.
+    const described = yield* Effect.forEach(rows, (row) =>
+      Effect.promise(async () => ({
+        row,
+        env: row.state === "enabled" ? await VsWorkerEnv.describe(path.dirname(row.location)) : undefined,
+      })),
+    )
     print(
-      rows.map((row) => ({
+      described.map(({ row, env }) => ({
         icon: SKILL_LABELS[row.state].icon,
         id: row.id,
         text: SKILL_LABELS[row.state].text,
-        detail: row.shadowedBy ?? row.location,
+        detail: (row.shadowedBy ?? row.location) + (env ? ` · ${VsWorkerEnv.FILE}: ${env.keys.length} variables` : ""),
       })),
       "This build bundles no skills",
       "Add them to vsworker/bundle.jsonc and rebuild",

@@ -21,6 +21,13 @@ import { ChildProcess } from "effect/unstable/process"
 import { ChildProcessSpawner } from "effect/unstable/process/ChildProcessSpawner"
 import { ShellPrompt, type Parameters } from "./shell/prompt"
 import { BashArity } from "@/permission/arity"
+// vsworker-seam: a skill directory may carry an env.json whose pairs become environment variables for the
+// commands that run in that skill. See vsworker/src/env.ts and vsworker/README.md.
+import { ConfigVariable } from "@/config/variable"
+import { Flag } from "@opencode-ai/core/flag/flag"
+import { Global } from "@opencode-ai/core/global"
+import { Skill } from "@/skill"
+import { VsWorkerEnv } from "@vsworker/bundle/env"
 
 export { Parameters } from "./shell/prompt"
 
@@ -344,6 +351,7 @@ export const ShellTool = Tool.define(
     const trunc = yield* Truncate.Service
     const plugin = yield* Plugin.Service
     const flags = yield* RuntimeFlags.Service
+    const skill = yield* Skill.Service // vsworker-seam
     const defaultTimeoutMs = flags.bashDefaultTimeoutMs ?? 2 * 60 * 1000
 
     const cygpath = Effect.fn("ShellTool.cygpath")(function* (shell: string, text: string) {
@@ -413,15 +421,37 @@ export const ShellTool = Tool.define(
       return scan
     })
 
-    const shellEnv = Effect.fn("ShellTool.shellEnv")(function* (ctx: Tool.Context, cwd: string) {
+    const shellEnv = Effect.fn("ShellTool.shellEnv")(function* (ctx: Tool.Context, cwd: string, command: string) {
       const extra = yield* plugin.trigger(
         "shell.env",
         { cwd, sessionID: ctx.sessionID, callID: ctx.callID },
         { env: {} },
       )
+      // vsworker-seam: env.json of every skill this command runs inside or names. It wins over the inherited
+      // environment and over plugin shell.env, because it is configuration for exactly this command; a
+      // `KEY=value cmd` prefix inside the command still wins after that, by shell rules.
+      const skills = yield* skill.all()
+      const found = yield* Effect.promise(() =>
+        VsWorkerEnv.resolve({
+          command,
+          cwd,
+          home: Global.Path.home,
+          skills,
+          substitute: (text) =>
+            ConfigVariable.substitute({
+              text,
+              type: "virtual",
+              source: `skill ${VsWorkerEnv.FILE}`,
+              dir: Flag.OPENCODE_CONFIG_DIR ?? Global.Path.config,
+              missing: "empty",
+            }),
+        }),
+      )
+      for (const warning of found.warnings) yield* Effect.logWarning("skill env.json ignored", { warning })
       return {
         ...process.env,
         ...extra.env,
+        ...found.env,
       }
     })
 
@@ -633,7 +663,7 @@ export const ShellTool = Tool.define(
                   shell,
                   command: params.command,
                   cwd,
-                  env: yield* shellEnv(ctx, cwd),
+                  env: yield* shellEnv(ctx, cwd, params.command), // vsworker-seam: command decides the skill env
                   timeout,
                 },
                 ctx,

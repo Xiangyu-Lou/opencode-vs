@@ -192,12 +192,15 @@ This fork ships a curated set of plugins, MCP server definitions, and skills com
 manifest is `vsworker/bundle.jsonc`; `bun run --cwd vsworker bundle generate` regenerates `vsworker/src/*.gen.ts`,
 `vsworker/bundle.schema.json`, and the `dependencies` block of `vsworker/package.json`, then runs `bun install`.
 Commit all of those, plus anything under `vsworker/skills/`, with `bun.lock`. `bundle check` is the CI drift gate
-and `bundle check --seams` verifies the ten marked edits in upstream files survived the last merge (twelve files
-are touched; the two `package.json` ones cannot carry a comment).
+and `bundle check --seams` verifies the thirteen marked edits in upstream files survived the last merge (fifteen
+files are touched; the two `package.json` ones cannot carry a comment).
 
 Skills are vendored under `vsworker/skills/<id>/` and written to `~/.cache/vsworker/vsworker/skills/` at runtime,
-because the skill tool needs a real directory. MCP entries carry a definition, not a server: keep credentials out
-of them and use `{env:VAR}` / `{file:path}`, which are substituted at config load.
+because the skill tool needs a real directory. A skill directory may carry a flat `env.json`; its pairs are
+exported to bash commands that run inside that directory or name a path inside it, for bundled skills and for any
+skill a user drops on disk alike (`vsworker/src/env.ts`, seam in `packages/opencode/src/tool/shell.ts`). MCP
+entries carry a definition, not a server: keep credentials out of them and use `{env:VAR}` / `{file:path}`, which
+are substituted at config load.
 
 Read `vsworker/README.md` before adding anything (the manifest reference, the `bundle import` helpers, and the
 constraints compiled-in content has to satisfy) and `vsworker/UPSTREAM.md` before merging upstream (the seam

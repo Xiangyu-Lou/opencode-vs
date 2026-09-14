@@ -11,6 +11,7 @@ import { Schema } from "effect"
 import { ConfigMarkdown } from "@opencode-ai/core/config/markdown"
 import { ConfigMCPV1 } from "@opencode-ai/core/v1/config/mcp"
 import { applyEdits, modify, parse as parseJsonc } from "jsonc-parser"
+import { VsWorkerEnv } from "../src/env"
 import {
   MANIFEST_FILE,
   REPO,
@@ -303,6 +304,17 @@ async function resolveSkill(entry: SkillEntry): Promise<ResolvedSkill> {
 
   if (total > SKILL_WARN_BYTES) {
     warnings.push(`skill ${entry.id}: ${Math.round(total / 1024)} KiB total, inlined into the build`)
+  }
+
+  // env.json is compiled into every copy of the build, exactly like an MCP `environment` block, so a literal
+  // credential in it ships to everyone. {env:VAR} and {file:path} are substituted per machine at load time.
+  const env = files.find((file) => file.path === VsWorkerEnv.FILE)
+  if (env && env.encoding === "utf8") {
+    for (const [key, value] of Object.entries(VsWorkerEnv.parse(env.data, `${dir}/${VsWorkerEnv.FILE}`).values)) {
+      if (SECRET_KEY.test(key) && value && !placeheld(value)) {
+        warnings.push(`skill ${entry.id}: env.json ${key} looks like a secret and is compiled into every build`)
+      }
+    }
   }
 
   return { entry, files, warnings }
@@ -724,6 +736,9 @@ const SEAMS: { file: string; marker: string }[] = [
   { file: "packages/core/src/v1/config/config.ts", marker: "vsworker-seam" },
   { file: "packages/opencode/src/index.ts", marker: "vsworker-seam" },
   { file: "packages/opencode/test/preload.ts", marker: "vsworker-seam" },
+  { file: "packages/opencode/src/tool/shell.ts", marker: "vsworker-seam" },
+  { file: "packages/opencode/src/tool/skill.ts", marker: "vsworker-seam" },
+  { file: "packages/opencode/test/tool/shell.test.ts", marker: "vsworker-seam" },
   { file: "packages/opencode/src/installation/index.ts", marker: "vsworker-seam" },
   { file: "packages/core/src/global.ts", marker: "vsworker-seam" },
   { file: "packages/opencode/test/cli/mcp-add.test.ts", marker: "vsworker-seam" },

@@ -4,8 +4,8 @@ VsWorker ships a curated set of plugins, MCP server definitions, and skills insi
 into the CLI binary and the desktop server bundle at build time, so an end user never needs npm, GitHub, or any
 network access for them to work. Updating any of them means shipping a new VsWorker release.
 
-Everything in this directory is fork-owned. Upstream OpenCode files are touched in exactly twelve places, ten of
-them marked `// vsworker-seam` and all of them listed in [UPSTREAM.md](./UPSTREAM.md).
+Everything in this directory is fork-owned. Upstream OpenCode files are touched in exactly fifteen places,
+thirteen of them marked `// vsworker-seam` and all of them listed in [UPSTREAM.md](./UPSTREAM.md).
 
 ## The manifest
 
@@ -95,6 +95,42 @@ directory on disk because the `skill` tool lists sibling files and slash command
 The frontmatter `name` must equal the `id`, and a `description` is required, because that is what the model picks
 skills by. `vsworker/skills/` is listed in the repo's `.prettierignore`, so a vendored skill keeps the exact bytes
 it was imported with.
+
+#### `env.json`
+
+A skill directory may carry an `env.json`. Its pairs become environment variables for the bash commands that run
+in that skill. The shape comes from the 识油 platform, which parses the same file when it registers a skill: a
+**flat** JSON object, no comments, no grouping, no nesting.
+
+```jsonc
+{ "PLATFORM_BASE_URL": "http://10.68.199.207", "QA_THRESHOLD": "0.69", "GRAPH_ENABLED": "1" }
+```
+
+- Values may be strings, numbers, booleans (`true` → `"1"`), or `null` (→ `""`). Anything else is an error.
+- Keys must look like environment variables, `[A-Za-z_][A-Za-z0-9_]*`. A leading `_` is exported like any other
+  key, because the platform does the same.
+- A file with **any** problem exports nothing, rather than half a configuration, and logs one warning. The
+  warning is not repeated until the file changes.
+- `{env:VAR}` and `{file:path}` are substituted per machine at load time, exactly as in a bundled MCP definition.
+  Note that a vendored skill's own scripts usually read `env.json` directly too, and they see the placeholder
+  text, not the substituted value. Use placeholders only for variables the host alone consumes.
+
+**Scope.** A skill's variables reach a bash command when the command runs in that skill: its working directory is
+the skill directory (or below it), or its command line names a path inside it, absolute, relative to the working
+directory, or under `~`. A bare word never matches, so unrelated commands are untouched. Two skills therefore
+never collide over a variable name.
+
+**Precedence.** Skill variables override the inherited environment and anything a plugin sets through
+`shell.env`; a `KEY=value cmd` prefix inside the command still wins after that, by shell rules. Because they
+override, a key like `PATH` or `HOME` in an `env.json` will replace the real one: name variables for the skill.
+
+This applies to any skill the host discovers, not just bundled ones. A colleague who drops a skill directory
+into `~/.config/vsworker/skills/<name>/` gets the same behaviour, which is how a skill is customised: copy the
+bundled directory there, edit its `env.json`, and the disk copy wins by name.
+
+The `skill` tool tells the model which variables a skill provides, by name only. `bundle validate` and
+`bundle generate` parse a vendored `env.json` with the same parser the product uses, so a file that loads at build
+time loads at runtime, and they warn when a key that looks like a credential carries a literal value.
 
 ## Commands
 
