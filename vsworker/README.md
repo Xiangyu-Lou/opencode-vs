@@ -94,7 +94,9 @@ directory on disk because the `skill` tool lists sibling files and slash command
 
 The frontmatter `name` must equal the `id`, and a `description` is required, because that is what the model picks
 skills by. `vsworker/skills/` is listed in the repo's `.prettierignore`, so a vendored skill keeps the exact bytes
-it was imported with.
+it was imported with. Editor and interpreter droppings are not bundled: `__pycache__/`, `*.pyc`, `*.pyo`,
+`.DS_Store`, `Thumbs.db` and `.git/` are skipped, because they differ per machine and would make the skills hash
+disagree between the machine that ran `generate` and CI.
 
 #### `env.json`
 
@@ -221,9 +223,9 @@ surfaces as a failing `bun typecheck` here rather than as a broken release.
 
 ## Writing in-house content
 
-Copy `plugins/hello/` or `skills/hello/` and add a manifest entry. Both `hello` entries are bundled into every
-build with `defaultEnabled: false`, as the smoke test for this pipeline, so a release is unaffected until someone
-enables them.
+Copy `plugins/hello/` or `skills/hello/` and add a manifest entry. The `hello` plugin is bundled with
+`defaultEnabled: false`, as the smoke test for this pipeline, so a release is unaffected until someone enables
+it. The `hello` skill is on, so a build can be checked end to end without editing any config.
 
 ## One known gap
 

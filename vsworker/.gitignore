@@ -1,0 +1,5 @@
+# Python bytecode caches that appear inside vendored skills. They are machine-local build
+# artifacts: inlining them would make `bundle check` hash differently on every machine.
+__pycache__/
+*.pyc
+*.pyo

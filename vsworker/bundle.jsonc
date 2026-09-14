@@ -18,8 +18,11 @@
   "skills": [
     {
       "id": "hello",
-      "defaultEnabled": false,
-      "description": "Template and smoke test for skill bundling. Off by default.",
+      "description": "Template and smoke test for skill bundling.",
+    },
+    {
+      "id": "well-intervention-recommendation",
+      "description": "井下作业措施推荐：问答对 → 图谱 两级检索。平台地址与阈值放在该 skill 的 env.json 里。",
     },
   ],
 }

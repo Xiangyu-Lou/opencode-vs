@@ -42,6 +42,13 @@ const FIXED_DEPS = ["@opencode-ai/core", "@opencode-ai/plugin", "effect", "jsonc
 const FILE_WARN_BYTES = 256 * 1024
 const SKILL_WARN_BYTES = 1024 * 1024
 
+// Editor and interpreter droppings that appear inside a skill directory but are not part of the skill. They are
+// skipped rather than inlined: they differ per machine, so bundling them would make the skills hash -- and with
+// it `bundle check` -- disagree between the machine that ran `generate` and the machine that runs CI.
+const SKIP_DIRS = new Set(["__pycache__", ".git", ".DS_Store"])
+const SKIP_FILES = new Set([".DS_Store", "Thumbs.db", ".gitkeep"])
+const SKIP_EXTENSIONS = new Set([".pyc", ".pyo"])
+
 const SECRET_KEY = /(token|secret|key|password|passwd|credential|auth)/i
 
 type Pkg = Record<string, unknown>
@@ -266,9 +273,11 @@ async function walk(root: string, prefix = ""): Promise<string[]> {
       throw new Error(`${relative} is a symlink. A bundled skill has to be self-contained.`)
     }
     if (entry.isDirectory()) {
+      if (SKIP_DIRS.has(entry.name)) continue
       result.push(...(await walk(root, relative)))
       continue
     }
+    if (SKIP_FILES.has(entry.name) || SKIP_EXTENSIONS.has(path.extname(entry.name))) continue
     if (entry.isFile()) result.push(relative)
   }
   return result
