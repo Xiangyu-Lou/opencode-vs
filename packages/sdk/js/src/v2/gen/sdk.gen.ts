@@ -395,6 +395,35 @@ import type {
   VcsGetResponses,
   VcsStatusErrors,
   VcsStatusResponses,
+  VsworkerMcpListErrors,
+  VsworkerMcpListResponses,
+  VsworkerMcpRemoveErrors,
+  VsworkerMcpRemoveResponses,
+  VsworkerMcpToggleErrors,
+  VsworkerMcpToggleResponses,
+  VsworkerMcpUpsertErrors,
+  VsworkerMcpUpsertResponses,
+  VsworkerPluginAddErrors,
+  VsworkerPluginAddResponses,
+  VsworkerPluginListErrors,
+  VsworkerPluginListResponses,
+  VsworkerPluginRemoveErrors,
+  VsworkerPluginRemoveResponses,
+  VsworkerPluginUpdateErrors,
+  VsworkerPluginUpdateResponses,
+  VsWorkerScope,
+  VsworkerSkillContentErrors,
+  VsworkerSkillContentResponses,
+  VsworkerSkillListErrors,
+  VsworkerSkillListResponses,
+  VsworkerSkillRemoveErrors,
+  VsworkerSkillRemoveResponses,
+  VsworkerSkillSourcesErrors,
+  VsworkerSkillSourcesResponses,
+  VsworkerSkillToggleErrors,
+  VsworkerSkillToggleResponses,
+  VsworkerSkillWriteErrors,
+  VsworkerSkillWriteResponses,
   WorktreeCreateErrors,
   WorktreeCreateInput,
   WorktreeCreateResponses,
@@ -5021,6 +5050,601 @@ export class Tui extends HeyApiClient {
   }
 }
 
+export class Plugin extends HeyApiClient {
+  /**
+   * List plugins
+   *
+   * List the plugins bundled into this build alongside the ones declared in config.
+   */
+  public list<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+      workspace?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<VsworkerPluginListResponses, VsworkerPluginListErrors, ThrowOnError>({
+      url: "/vsworker/plugin",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Add a plugin
+   *
+   * Install a plugin package and declare it in the chosen config file.
+   */
+  public add<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+      workspace?: string
+      scope?: VsWorkerScope
+      expectedRevision?: string
+      spec?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+            { in: "body", key: "scope" },
+            { in: "body", key: "expectedRevision" },
+            { in: "body", key: "spec" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<VsworkerPluginAddResponses, VsworkerPluginAddErrors, ThrowOnError>({
+      url: "/vsworker/plugin",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Remove a plugin
+   *
+   * Remove a plugin entry from the chosen config file.
+   */
+  public remove<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string
+      directory?: string
+      workspace?: string
+      scope?: VsWorkerScope
+      expectedRevision?: string
+      spec?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "id" },
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+            { in: "body", key: "scope" },
+            { in: "body", key: "expectedRevision" },
+            { in: "body", key: "spec" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).delete<
+      VsworkerPluginRemoveResponses,
+      VsworkerPluginRemoveErrors,
+      ThrowOnError
+    >({
+      url: "/vsworker/plugin/{id}",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Update a bundled plugin
+   *
+   * Enable, disable, or set the options of a plugin bundled into this build.
+   */
+  public update<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string
+      directory?: string
+      workspace?: string
+      scope?: VsWorkerScope
+      expectedRevision?: string
+      enabled?: boolean
+      options?: {
+        [key: string]: unknown
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "id" },
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+            { in: "body", key: "scope" },
+            { in: "body", key: "expectedRevision" },
+            { in: "body", key: "enabled" },
+            { in: "body", key: "options" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).patch<
+      VsworkerPluginUpdateResponses,
+      VsworkerPluginUpdateErrors,
+      ThrowOnError
+    >({
+      url: "/vsworker/plugin/{id}",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+}
+
+export class Skill extends HeyApiClient {
+  /**
+   * List skills
+   *
+   * List the skills bundled into this build alongside the ones found on disk.
+   */
+  public list<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+      workspace?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<VsworkerSkillListResponses, VsworkerSkillListErrors, ThrowOnError>({
+      url: "/vsworker/skill",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Create or update a skill
+   *
+   * Write a SKILL.md into the chosen scope, creating it when it does not exist.
+   */
+  public write<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+      workspace?: string
+      scope?: VsWorkerScope
+      name?: string
+      description?: string
+      content?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+            { in: "body", key: "scope" },
+            { in: "body", key: "name" },
+            { in: "body", key: "description" },
+            { in: "body", key: "content" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<VsworkerSkillWriteResponses, VsworkerSkillWriteErrors, ThrowOnError>({
+      url: "/vsworker/skill",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Read a skill
+   *
+   * Read the frontmatter and body of one skill.
+   */
+  public content<ThrowOnError extends boolean = false>(
+    parameters: {
+      name: string
+      directory?: string
+      workspace?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "name" },
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<
+      VsworkerSkillContentResponses,
+      VsworkerSkillContentErrors,
+      ThrowOnError
+    >({
+      url: "/vsworker/skill/{name}/content",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Remove a skill
+   *
+   * Delete a skill directory that lives in a scope this build writes to.
+   */
+  public remove<ThrowOnError extends boolean = false>(
+    parameters: {
+      name: string
+      directory?: string
+      workspace?: string
+      scope?: VsWorkerScope
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "name" },
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+            { in: "body", key: "scope" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).delete<
+      VsworkerSkillRemoveResponses,
+      VsworkerSkillRemoveErrors,
+      ThrowOnError
+    >({
+      url: "/vsworker/skill/{name}",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Toggle a bundled skill
+   *
+   * Enable or disable a skill bundled into this build.
+   */
+  public toggle<ThrowOnError extends boolean = false>(
+    parameters: {
+      name: string
+      directory?: string
+      workspace?: string
+      scope?: VsWorkerScope
+      expectedRevision?: string
+      enabled?: boolean
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "name" },
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+            { in: "body", key: "scope" },
+            { in: "body", key: "expectedRevision" },
+            { in: "body", key: "enabled" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).patch<
+      VsworkerSkillToggleResponses,
+      VsworkerSkillToggleErrors,
+      ThrowOnError
+    >({
+      url: "/vsworker/skill/{name}",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Set skill sources
+   *
+   * Replace the extra skill paths and urls in the chosen config file.
+   */
+  public sources<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+      workspace?: string
+      scope?: VsWorkerScope
+      expectedRevision?: string
+      paths?: Array<string>
+      urls?: Array<string>
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+            { in: "body", key: "scope" },
+            { in: "body", key: "expectedRevision" },
+            { in: "body", key: "paths" },
+            { in: "body", key: "urls" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).put<
+      VsworkerSkillSourcesResponses,
+      VsworkerSkillSourcesErrors,
+      ThrowOnError
+    >({
+      url: "/vsworker/skill-source",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+}
+
+export class Mcp2 extends HeyApiClient {
+  /**
+   * List MCP servers
+   *
+   * List the MCP servers bundled into this build alongside the ones declared in config.
+   */
+  public list<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+      workspace?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<VsworkerMcpListResponses, VsworkerMcpListErrors, ThrowOnError>({
+      url: "/vsworker/mcp",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Remove an MCP server
+   *
+   * Remove an MCP server definition from the chosen config file.
+   */
+  public remove<ThrowOnError extends boolean = false>(
+    parameters: {
+      name: string
+      directory?: string
+      workspace?: string
+      scope?: VsWorkerScope
+      expectedRevision?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "name" },
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+            { in: "body", key: "scope" },
+            { in: "body", key: "expectedRevision" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).delete<VsworkerMcpRemoveResponses, VsworkerMcpRemoveErrors, ThrowOnError>({
+      url: "/vsworker/mcp/{name}",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Toggle an MCP server
+   *
+   * Enable or disable an MCP server through the stock mcp.<name>.enabled key.
+   */
+  public toggle<ThrowOnError extends boolean = false>(
+    parameters: {
+      name: string
+      directory?: string
+      workspace?: string
+      scope?: VsWorkerScope
+      expectedRevision?: string
+      enabled?: boolean
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "name" },
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+            { in: "body", key: "scope" },
+            { in: "body", key: "expectedRevision" },
+            { in: "body", key: "enabled" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).patch<VsworkerMcpToggleResponses, VsworkerMcpToggleErrors, ThrowOnError>({
+      url: "/vsworker/mcp/{name}",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Add or edit an MCP server
+   *
+   * Write a full MCP server definition into the chosen config file.
+   */
+  public upsert<ThrowOnError extends boolean = false>(
+    parameters: {
+      name: string
+      directory?: string
+      workspace?: string
+      scope?: VsWorkerScope
+      expectedRevision?: string
+      config?: McpLocalConfig | McpRemoteConfig
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "name" },
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+            { in: "body", key: "scope" },
+            { in: "body", key: "expectedRevision" },
+            { in: "body", key: "config" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).put<VsworkerMcpUpsertResponses, VsworkerMcpUpsertErrors, ThrowOnError>({
+      url: "/vsworker/mcp/{name}",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+}
+
+export class Vsworker extends HeyApiClient {
+  private _plugin?: Plugin
+  get plugin(): Plugin {
+    return (this._plugin ??= new Plugin({ client: this.client }))
+  }
+
+  private _skill?: Skill
+  get skill(): Skill {
+    return (this._skill ??= new Skill({ client: this.client }))
+  }
+
+  private _mcp?: Mcp2
+  get mcp(): Mcp2 {
+    return (this._mcp ??= new Mcp2({ client: this.client }))
+  }
+}
+
 export class Health extends HeyApiClient {
   /**
    * Check server health
@@ -6522,7 +7146,7 @@ export class Command2 extends HeyApiClient {
   }
 }
 
-export class Skill extends HeyApiClient {
+export class Skill2 extends HeyApiClient {
   /**
    * List skills
    *
@@ -7043,9 +7667,9 @@ export class V2 extends HeyApiClient {
     return (this._command ??= new Command2({ client: this.client }))
   }
 
-  private _skill?: Skill
-  get skill(): Skill {
-    return (this._skill ??= new Skill({ client: this.client }))
+  private _skill?: Skill2
+  get skill(): Skill2 {
+    return (this._skill ??= new Skill2({ client: this.client }))
   }
 
   private _event?: Event2
@@ -7210,6 +7834,11 @@ export class OpencodeClient extends HeyApiClient {
   private _tui?: Tui
   get tui(): Tui {
     return (this._tui ??= new Tui({ client: this.client }))
+  }
+
+  private _vsworker?: Vsworker
+  get vsworker(): Vsworker {
+    return (this._vsworker ??= new Vsworker({ client: this.client }))
   }
 
   private _v2?: V2

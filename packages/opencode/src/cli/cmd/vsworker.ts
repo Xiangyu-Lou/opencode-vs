@@ -1,68 +1,22 @@
 import * as prompts from "@clack/prompts"
-import { Flock } from "@opencode-ai/core/util/flock"
 import { Global } from "@opencode-ai/core/global"
 import { VsWorkerPlugins } from "@vsworker/bundle"
 import { VsWorkerMcp } from "@vsworker/bundle/mcp"
 import { VsWorkerEnv } from "@vsworker/bundle/env"
 import { VsWorkerSkills } from "@vsworker/bundle/skills"
 import { Effect } from "effect"
-import { applyEdits, modify } from "jsonc-parser"
 import path from "path"
 import { Config } from "@/config/config"
 import { ConfigPlugin } from "@/config/plugin"
-import { ConfigParse } from "@/config/parse"
 import { ConfigVariable } from "@/config/variable"
 import { InstanceRef } from "@/effect/instance-ref"
 import { RuntimeFlags } from "@/effect/runtime-flags"
 import { parsePluginSpecifier } from "@/plugin/shared"
 import { Skill } from "@/skill"
-import { Filesystem } from "@/util/filesystem"
+import { VsWorkerConfigEdit } from "@/vsworker/config-edit"
 import { cmd } from "./cmd"
 import { effectCmd, fail } from "../effect-cmd"
 import { UI } from "../ui"
-
-// Same resolution as `opencode mcp add`: prefer a config file that already exists, in the project directory
-// first and then under .opencode/, and fall back to opencode.json.
-async function resolveConfigPath(baseDir: string, global: boolean) {
-  const fallback = path.join(baseDir, "opencode.json")
-  const candidates = [fallback, path.join(baseDir, "opencode.jsonc")]
-  if (!global) {
-    candidates.push(path.join(baseDir, ".opencode", "opencode.json"), path.join(baseDir, ".opencode", "opencode.jsonc"))
-  }
-  for (const candidate of candidates) {
-    if (await Filesystem.exists(candidate)) return candidate
-  }
-  return fallback
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-}
-
-type Kind = "plugins" | "mcp" | "skills"
-
-// Where each kind's on/off switch lives in opencode.json. MCP servers use the stock `mcp.<id>.enabled` key
-// rather than anything fork-specific, so the same edit works on a server the user later redefines themselves.
-function togglePath(kind: Kind, id: string, parsed: unknown): (string | number)[] {
-  if (kind === "mcp") return ["mcp", id, "enabled"]
-  if (kind === "skills") return ["vsworker", "skills", id]
-  const vsworker = isRecord(parsed) && isRecord(parsed.vsworker) ? parsed.vsworker : {}
-  const plugins = isRecord(vsworker.plugins) ? vsworker.plugins : {}
-  // Preserve an existing options object by writing to vsworker.plugins.<id>.enabled instead of replacing it.
-  return isRecord(plugins[id]) ? ["vsworker", "plugins", id, "enabled"] : ["vsworker", "plugins", id]
-}
-
-async function patchConfig(input: { kind: Kind; id: string; enabled: boolean; file: string }) {
-  return Flock.withLock(`vsworker-config:${input.file}`, async () => {
-    const text = (await Filesystem.exists(input.file)) ? await Filesystem.readText(input.file) : "{}"
-    const parsed = ConfigParse.jsonc(text, input.file)
-    const edits = modify(text, togglePath(input.kind, input.id, parsed), input.enabled, {
-      formattingOptions: { insertSpaces: true, tabSize: 2 },
-    })
-    await Filesystem.write(input.file, applyEdits(text, edits))
-    return input.file
-  })
-}
 
 const pluginState = Effect.fn("Cli.vsworker.plugins.state")(function* () {
   const config = yield* Config.use.get()
@@ -228,14 +182,14 @@ export const VsWorkerSkillsListCommand = effectCmd({
   }),
 })
 
-const ids = (kind: Kind) =>
+const ids = (kind: VsWorkerConfigEdit.Kind) =>
   Effect.gen(function* () {
     if (kind === "plugins") return (yield* pluginState()).map((row) => row.id)
     if (kind === "mcp") return (yield* mcpState()).map((row) => row.id)
     return (yield* skillState()).map((row) => row.id)
   })
 
-function toggle(kind: Kind, enabled: boolean) {
+function toggle(kind: VsWorkerConfigEdit.Kind, enabled: boolean) {
   return Effect.fn(`Cli.vsworker.${kind}.toggle`)(function* (args: { id?: string; global?: boolean }) {
     const id = (args.id ?? "").trim()
     if (!id) {
@@ -249,9 +203,10 @@ function toggle(kind: Kind, enabled: boolean) {
     }
 
     const ctx = yield* InstanceRef
-    const base = args.global ? Global.Path.config : (ctx?.worktree ?? process.cwd())
-    const file = yield* Effect.promise(() => resolveConfigPath(base, Boolean(args.global)))
-    yield* Effect.promise(() => patchConfig({ kind, id, enabled, file }))
+    const scope = args.global ? "global" : "project"
+    const base = VsWorkerConfigEdit.baseDir(scope, ctx)
+    const file = yield* Effect.promise(() => VsWorkerConfigEdit.resolveFile(base, scope))
+    yield* Effect.promise(() => VsWorkerConfigEdit.toggle({ kind, id, enabled, file }))
     yield* Config.use.invalidate()
 
     UI.empty()
@@ -259,7 +214,7 @@ function toggle(kind: Kind, enabled: boolean) {
   })
 }
 
-function toggleCommands(kind: Kind, noun: string) {
+function toggleCommands(kind: VsWorkerConfigEdit.Kind, noun: string) {
   const builder = (yargs: Parameters<NonNullable<Parameters<typeof effectCmd>[0]["builder"]>>[0]) =>
     yargs
       .positional("id", { type: "string", describe: `bundled ${noun}` })

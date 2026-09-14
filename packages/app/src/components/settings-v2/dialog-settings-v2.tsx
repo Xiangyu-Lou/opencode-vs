@@ -14,6 +14,8 @@ import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { useLayout } from "@/context/layout"
 import { useTabs } from "@/context/tabs"
 import { useServerSync } from "@/context/server-sync"
+// vsworker-seam: the fork's Extensions section lives in packages/app/src/vsworker.
+import { VsWorkerSettingsNav, VsWorkerSettingsPanels } from "@/vsworker/settings"
 
 export const DialogSettings: Component<{
   sessionID?: string
@@ -85,6 +87,8 @@ export const DialogSettings: Component<{
                     </TabsV2.Trigger>
                   </div>
                 </div>
+
+                <VsWorkerSettingsNav />
               </div>
             </div>
             <div class="settings-v2-nav-footer">
@@ -108,6 +112,7 @@ export const DialogSettings: Component<{
         <TabsV2.Content value="models" class="settings-v2-panel">
           <SettingsModelsV2 />
         </TabsV2.Content>
+        <VsWorkerSettingsPanels directory={directory} />
       </TabsV2>
     </Dialog>
   )

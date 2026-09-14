@@ -25,6 +25,8 @@ import { SessionApi } from "./groups/session"
 import { SyncApi } from "./groups/sync"
 import { TuiApi } from "./groups/tui"
 import { WorkspaceApi } from "./groups/workspace"
+// vsworker-seam: the fork's plugin/skill/MCP management routes join the instance API.
+import { VsWorkerApi } from "./groups/vsworker"
 import { makeApi } from "@opencode-ai/protocol/api"
 import { LocationMiddleware } from "@opencode-ai/server/location"
 import { SessionLocationMiddleware } from "@opencode-ai/server/middleware/session-location"
@@ -73,6 +75,7 @@ export const InstanceHttpApi = HttpApi.make("opencode-instance")
   .addHttpApi(SessionApi)
   .addHttpApi(SyncApi)
   .addHttpApi(TuiApi)
+  .addHttpApi(VsWorkerApi) // vsworker-seam
   .addHttpApi(WorkspaceApi)
   .middleware(SchemaErrorMiddleware)
 

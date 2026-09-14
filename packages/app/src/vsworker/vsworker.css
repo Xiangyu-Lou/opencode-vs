@@ -1,0 +1,202 @@
+/* vsworker-seam: styles for the fork's Extensions tabs. Built on the settings-v2 tokens so the tabs sit flush
+   with the upstream ones; nothing here overrides an upstream rule. */
+
+.vsworker-scope {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vsworker-scope-hint {
+  font-size: 12px;
+  color: var(--v2-text-text-faint);
+}
+
+.vsworker-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-block: 16px;
+  border-bottom: 0.5px solid var(--v2-border-border-base);
+  min-width: 0;
+}
+
+.vsworker-row:last-child {
+  border-bottom: none;
+}
+
+.vsworker-row-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.vsworker-row-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 530;
+  line-height: 1;
+  letter-spacing: -0.04px;
+  color: var(--v2-text-text-base);
+}
+
+.vsworker-row-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vsworker-row-description {
+  font-size: 13px;
+  font-weight: 440;
+  line-height: 18px;
+  color: var(--v2-text-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vsworker-row-meta {
+  font-size: 12px;
+  font-weight: 440;
+  line-height: 16px;
+  color: var(--v2-text-text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono, monospace);
+}
+
+.vsworker-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.vsworker-pill {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 440;
+  line-height: 16px;
+  padding-inline: 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: var(--v2-background-bg-layer-02);
+  color: var(--v2-text-text-muted);
+}
+
+.vsworker-pill[data-tone="on"] {
+  color: var(--v2-text-text-accent);
+}
+
+.vsworker-pill[data-tone="warn"] {
+  color: var(--v2-text-text-base);
+}
+
+.vsworker-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--v2-border-border-strong);
+}
+
+.vsworker-dot[data-tone="ok"] {
+  background: var(--v2-icon-icon-accent);
+}
+
+.vsworker-dot[data-tone="error"],
+.vsworker-dot[data-tone="warn"] {
+  background: var(--v2-icon-icon-base);
+}
+
+.vsworker-empty {
+  padding-block: 16px;
+  font-size: 13px;
+  font-weight: 440;
+  line-height: 18px;
+  color: var(--v2-text-text-muted);
+}
+
+.vsworker-section-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.vsworker-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.vsworker-field-label {
+  font-size: 12px;
+  font-weight: 530;
+  color: var(--v2-text-text-base);
+}
+
+.vsworker-field-hint {
+  font-size: 12px;
+  font-weight: 440;
+  line-height: 16px;
+  color: var(--v2-text-text-faint);
+}
+
+.vsworker-field-error {
+  font-size: 12px;
+  font-weight: 440;
+  line-height: 16px;
+  color: var(--v2-text-text-base);
+}
+
+.vsworker-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.vsworker-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* TextareaV2's wrapper is a fixed 280px by default; these forms want the full dialog width. The extra
+   attribute raises specificity above that rule regardless of stylesheet order. */
+.vsworker-textarea[data-component="textarea-v2"] {
+  width: 100%;
+}
+
+.vsworker-textarea [data-slot="textarea-v2-textarea"] {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.vsworker-dialog {
+  width: min(560px, 92vw);
+}
+
+.vsworker-dialog-wide {
+  width: min(720px, 94vw);
+}
+
+@media (max-width: 640px) {
+  .vsworker-row {
+    flex-wrap: wrap;
+  }
+
+  .vsworker-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

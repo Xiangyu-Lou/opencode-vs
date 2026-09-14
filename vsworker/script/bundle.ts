@@ -359,6 +359,7 @@ async function renderBundle(kind: Kind, rows: Resolved[]) {
       `pkg: { name: ${literal(row.name)}, version: ${literal(row.version)} }`,
       `options: ${row.entry.options ? literal(row.entry.options) : "undefined"}`,
       `defaultEnabled: ${row.entry.defaultEnabled !== false}`,
+      `description: ${row.entry.description ? literal(row.entry.description) : "undefined"}`,
       `mod: m${index}`,
     ]
     return `  { ${fields.join(", ")} },`
@@ -751,6 +752,12 @@ const SEAMS: { file: string; marker: string }[] = [
   { file: "packages/opencode/src/installation/index.ts", marker: "vsworker-seam" },
   { file: "packages/core/src/global.ts", marker: "vsworker-seam" },
   { file: "packages/opencode/test/cli/mcp-add.test.ts", marker: "vsworker-seam" },
+  // Management UI: routes, handlers, route coverage, the settings dialog, and the app dictionary.
+  { file: "packages/opencode/src/server/routes/instance/httpapi/api.ts", marker: "vsworker-seam" },
+  { file: "packages/opencode/src/server/routes/instance/httpapi/server.ts", marker: "vsworker-seam" },
+  { file: "packages/opencode/test/server/httpapi-exercise/index.ts", marker: "vsworker-seam" },
+  { file: "packages/app/src/components/settings-v2/dialog-settings-v2.tsx", marker: "vsworker-seam" },
+  { file: "packages/app/src/context/language.tsx", marker: "vsworker-seam" },
 ]
 
 async function seams() {

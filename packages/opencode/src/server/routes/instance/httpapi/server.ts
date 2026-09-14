@@ -99,6 +99,8 @@ import { questionHandlers } from "./handlers/question"
 import { sessionHandlers } from "./handlers/session"
 import { syncHandlers } from "./handlers/sync"
 import { tuiHandlers } from "./handlers/tui"
+// vsworker-seam: handlers for the fork's management routes.
+import { vsworkerHandlers } from "./handlers/vsworker"
 import { handlers } from "@opencode-ai/server/handlers"
 import { buildLocationServiceMap, LocationServiceMap } from "@opencode-ai/core/location-services"
 import { layer as locationLayer } from "@opencode-ai/server/location"
@@ -167,6 +169,7 @@ const instanceApiRoutes = HttpApiBuilder.layer(InstanceHttpApi).pipe(
     sessionHandlers,
     syncHandlers,
     tuiHandlers,
+    vsworkerHandlers, // vsworker-seam
     workspaceHandlers,
   ]),
 )

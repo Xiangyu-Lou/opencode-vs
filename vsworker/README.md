@@ -4,8 +4,8 @@ VsWorker ships a curated set of plugins, MCP server definitions, and skills insi
 into the CLI binary and the desktop server bundle at build time, so an end user never needs npm, GitHub, or any
 network access for them to work. Updating any of them means shipping a new VsWorker release.
 
-Everything in this directory is fork-owned. Upstream OpenCode files are touched in exactly fifteen places,
-thirteen of them marked `// vsworker-seam` and all of them listed in [UPSTREAM.md](./UPSTREAM.md).
+Everything in this directory is fork-owned. Upstream OpenCode files are touched in exactly twenty places,
+eighteen of them marked `// vsworker-seam` and all of them listed in [UPSTREAM.md](./UPSTREAM.md).
 
 ## The manifest
 
@@ -289,6 +289,30 @@ npx electron-builder --win --x64 --publish never --config electron-builder.confi
 Get either wrong and the app starts by importing a module that is not in it. `out/` keeps whichever platform it
 was built for last, so rebuild before packaging for another one, and run `bun install` afterwards to drop the
 foreign-platform modules again.
+
+## Managing all of this from the desktop client
+
+Settings (`cmd+,`) has an **Extensions** section with **Plugins**, **Skills**, and **MCP servers** tabs. Each tab
+lists what this build bundles alongside what the user declared, and writes changes back to the same
+`opencode.json(c)` keys the CLI uses, so the UI, the CLI, the TUI, and a hand edit can never disagree.
+
+- Every tab has one **Global / Project** switch that decides which file a change lands in, resolved the same way
+  `opencode vsworker … -g` resolves it.
+- Writes are surgical `jsonc-parser` edits under a file lock, so comments and formatting survive.
+- Each list carries the revision of the file it read. A write pins itself to that revision and is refused with a
+  409 if the file changed underneath, rather than overwriting someone else's edit.
+- After a write the instance is disposed, which is what makes a toggled MCP server or plugin actually start or
+  stop; the UI refetches when the resulting `global.disposed` event arrives.
+- Skills the user owns are real directories: `~/.config/vsworker/skills/<name>/SKILL.md` globally, or
+  `<worktree>/.opencode/skills/<name>/SKILL.md` for a project. Bundled skills, `~/.claude/skills`, and anything
+  pulled from a `skills.urls` index are listed read-only, because they are not ours to rewrite.
+- A bundled MCP server can be copied into the user's config to be edited. That is a fork in the road, not a
+  patch: the copy stops following the build, exactly as the precedence rules above describe.
+
+The routes are `GET|POST|PATCH|PUT|DELETE /vsworker/{plugin,skill,skill-source,mcp}`, declared in
+`packages/opencode/src/server/routes/instance/httpapi/groups/vsworker.ts`. They are part of the generated SDK,
+so `./script/generate.ts` has to run after any change to them. `vsworker/UPSTREAM.md` lists the five seams this
+feature adds.
 
 ## One known gap
 

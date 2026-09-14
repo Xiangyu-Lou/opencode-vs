@@ -1,8 +1,10 @@
 # Staying mergeable with upstream OpenCode
 
-VsWorker is a fork of `anomalyco/opencode`. Everything the fork adds lives in `vsworker/`, except for fifteen
-small edits inside upstream files. Thirteen of them carry a `// vsworker-seam` comment so a merge that drops one
-can be detected mechanically.
+VsWorker is a fork of `anomalyco/opencode`. Everything the fork adds for bundling plugins, MCP servers, and
+skills lives in `vsworker/`, and everything it adds for managing them from the desktop client lives in
+`packages/opencode/src/vsworker/` and `packages/app/src/vsworker/`. Outside those directories the fork makes
+twenty small edits inside upstream files. Eighteen of them carry a `// vsworker-seam` comment so a merge that
+drops one can be detected mechanically.
 
 ## Seam inventory
 
@@ -24,6 +26,26 @@ can be detected mechanically.
 | `packages/core/src/global.ts`                 | `app` is `vsworker`, so the fork owns its XDG directories instead of sharing opencode's                                                              |
 | `packages/opencode/test/cli/mcp-add.test.ts`  | asserts the global config path under the renamed app dir                                                                                             |
 
+## Seam inventory: the management UI
+
+| File                                                             | What the fork adds                                                                 |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `packages/opencode/src/server/routes/instance/httpapi/api.ts`    | `.addHttpApi(VsWorkerApi)` on `InstanceHttpApi`                                    |
+| `packages/opencode/src/server/routes/instance/httpapi/server.ts` | `vsworkerHandlers` in the `instanceApiRoutes` handler list                         |
+| `packages/opencode/test/server/httpapi-exercise/index.ts`        | spreads `vsworkerScenarios` into the route-coverage list                           |
+| `packages/app/src/components/settings-v2/dialog-settings-v2.tsx` | one `<VsWorkerSettingsNav />` and one `<VsWorkerSettingsPanels />`                 |
+| `packages/app/src/context/language.tsx`                          | merges the fork's i18n domain into the base dictionary and into each locale loader |
+
+Fork-owned files behind those five seams:
+
+- `packages/opencode/src/vsworker/*` — config writes, entry description, skill files, plugin specs
+- `packages/opencode/src/server/routes/instance/httpapi/{groups,handlers}/vsworker.ts`
+- `packages/opencode/test/{vsworker/*,server/httpapi-vsworker.test.ts,server/httpapi-exercise/vsworker.ts}`
+- `packages/app/src/vsworker/*` and `packages/app/e2e/regression/vsworker-settings.spec.ts`
+
+The generated SDK (`packages/sdk/openapi.json`, `packages/sdk/js/src/**/gen/*`) contains the VsWorker routes.
+It is regenerated, never hand-edited: on a conflict take upstream's copy and rerun `./script/generate.ts`.
+
 Fork-owned files that live inside the upstream tree because they need its path aliases and fixtures, but which
 upstream will never touch:
 
@@ -43,7 +65,7 @@ also gained `OPENCODE_TARGET_PLATFORM` / `OPENCODE_TARGET_ARCH`, so a cross buil
 `node-pty` package instead of the build machine's.
 
 The two `package.json` seams are the only ones that are not marked, because JSON has no comments.
-`bundle check --seams` covers the seven that are. `.prettierignore` also gains a `vsworker/skills/` line, which is
+`bundle check --seams` covers the eighteen that are. `.prettierignore` also gains a `vsworker/skills/` line, which is
 not a seam: losing it only means the formatter rewrites vendored skill files, which `bundle check` then reports as
 drift.
 
@@ -64,8 +86,11 @@ git checkout vsworker && git merge dev
 bun install
 bun run --cwd vsworker bundle check --seams
 bun run --cwd vsworker bundle check
+./script/generate.ts                      # the SDK carries the fork's routes; regenerate after every merge
 bun typecheck
-cd packages/opencode && bun test test/vsworker test/plugin test/config test/skill test/mcp
+cd packages/opencode && bun test test/vsworker test/server/httpapi-vsworker.test.ts test/plugin test/config test/skill test/mcp
+cd packages/opencode && bun run test:httpapi
+cd packages/app && bun run test:unit
 ```
 
 Expected conflict hotspots, in rough order of likelihood:
@@ -82,6 +107,9 @@ Expected conflict hotspots, in rough order of likelihood:
    function's signature rarely, but a merge that reverts it to `(ctx, cwd)` compiles only after the call site is
    reverted too, which is the shape to watch for.
 6. The two `package.json` dependency lines.
+7. `packages/app/src/context/language.tsx` — upstream adds locales to the `loaders` map often. Every entry has
+   to keep passing its own locale as `merge`'s third argument; a new entry that forgets it will not typecheck.
+8. `packages/sdk/**` generated output — never merge it by hand, rerun `./script/generate.ts`.
 
 If `bundle check --seams` reports a missing seam, reapply it from the table above before shipping. A dropped seam
 does not fail typecheck or tests; it silently ships a build with part of the bundle missing.

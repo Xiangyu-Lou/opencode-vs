@@ -12,6 +12,7 @@ export const server: readonly Raw[] = [
     pkg: { name: "hello", version: "0.0.0" },
     options: undefined,
     defaultEnabled: false,
+    description: "Template and smoke test for the bundling pipeline. Off by default.",
     mod: m0,
   },
 ]

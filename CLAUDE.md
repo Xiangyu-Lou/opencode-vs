@@ -192,7 +192,7 @@ This fork ships a curated set of plugins, MCP server definitions, and skills com
 manifest is `vsworker/bundle.jsonc`; `bun run --cwd vsworker bundle generate` regenerates `vsworker/src/*.gen.ts`,
 `vsworker/bundle.schema.json`, and the `dependencies` block of `vsworker/package.json`, then runs `bun install`.
 Commit all of those, plus anything under `vsworker/skills/`, with `bun.lock`. `bundle check` is the CI drift gate
-and `bundle check --seams` verifies the thirteen marked edits in upstream files survived the last merge (fifteen
+and `bundle check --seams` verifies the eighteen marked edits in upstream files survived the last merge (twenty
 files are touched; the two `package.json` ones cannot carry a comment).
 
 Skills are vendored under `vsworker/skills/<id>/` and written to `~/.cache/vsworker/vsworker/skills/` at runtime,

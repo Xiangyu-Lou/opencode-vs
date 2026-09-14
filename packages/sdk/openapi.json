@@ -9276,6 +9276,1345 @@
         ]
       }
     },
+    "/vsworker/plugin": {
+      "get": {
+        "tags": ["vsworker"],
+        "operationId": "vsworker.plugin.list",
+        "parameters": [
+          {
+            "name": "directory",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "workspace",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bundled and user plugins",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerPluginList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestError"
+                }
+              }
+            }
+          }
+        },
+        "description": "List the plugins bundled into this build alongside the ones declared in config.",
+        "summary": "List plugins",
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.vsworker.plugin.list({\n  ...\n})"
+          }
+        ]
+      },
+      "post": {
+        "tags": ["vsworker"],
+        "operationId": "vsworker.plugin.add",
+        "parameters": [
+          {
+            "name": "directory",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "workspace",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plugin added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerRevisions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VsWorkerInvalidError | InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/VsWorkerInvalidError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InvalidRequestError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VsWorkerNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerNotFoundError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VsWorkerConflictError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerConflictError"
+                }
+              }
+            }
+          }
+        },
+        "description": "Install a plugin package and declare it in the chosen config file.",
+        "summary": "Add a plugin",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "$ref": "#/components/schemas/VsWorkerScope"
+                  },
+                  "expectedRevision": {
+                    "type": "string"
+                  },
+                  "spec": {
+                    "type": "string"
+                  }
+                },
+                "required": ["scope", "spec"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.vsworker.plugin.add({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/vsworker/plugin/{id}": {
+      "patch": {
+        "tags": ["vsworker"],
+        "operationId": "vsworker.plugin.update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "directory",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "workspace",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Config written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerRevisions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VsWorkerInvalidError | InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/VsWorkerInvalidError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InvalidRequestError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VsWorkerNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerNotFoundError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VsWorkerConflictError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerConflictError"
+                }
+              }
+            }
+          }
+        },
+        "description": "Enable, disable, or set the options of a plugin bundled into this build.",
+        "summary": "Update a bundled plugin",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "$ref": "#/components/schemas/VsWorkerScope"
+                  },
+                  "expectedRevision": {
+                    "type": "string"
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "options": {
+                    "type": "object"
+                  }
+                },
+                "required": ["scope"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.vsworker.plugin.update({\n  ...\n})"
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["vsworker"],
+        "operationId": "vsworker.plugin.remove",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "directory",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "workspace",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plugin removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerRevisions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VsWorkerInvalidError | InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/VsWorkerInvalidError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InvalidRequestError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VsWorkerNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerNotFoundError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VsWorkerConflictError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerConflictError"
+                }
+              }
+            }
+          }
+        },
+        "description": "Remove a plugin entry from the chosen config file.",
+        "summary": "Remove a plugin",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "$ref": "#/components/schemas/VsWorkerScope"
+                  },
+                  "expectedRevision": {
+                    "type": "string"
+                  },
+                  "spec": {
+                    "type": "string"
+                  }
+                },
+                "required": ["scope", "spec"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.vsworker.plugin.remove({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/vsworker/skill": {
+      "get": {
+        "tags": ["vsworker"],
+        "operationId": "vsworker.skill.list",
+        "parameters": [
+          {
+            "name": "directory",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "workspace",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bundled, user, and discovered skills",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerSkillList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestError"
+                }
+              }
+            }
+          }
+        },
+        "description": "List the skills bundled into this build alongside the ones found on disk.",
+        "summary": "List skills",
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.vsworker.skill.list({\n  ...\n})"
+          }
+        ]
+      },
+      "post": {
+        "tags": ["vsworker"],
+        "operationId": "vsworker.skill.write",
+        "parameters": [
+          {
+            "name": "directory",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "workspace",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Skill written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerSkillContent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VsWorkerInvalidError | InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/VsWorkerInvalidError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InvalidRequestError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VsWorkerNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerNotFoundError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VsWorkerConflictError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerConflictError"
+                }
+              }
+            }
+          }
+        },
+        "description": "Write a SKILL.md into the chosen scope, creating it when it does not exist.",
+        "summary": "Create or update a skill",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "$ref": "#/components/schemas/VsWorkerScope"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "string"
+                  }
+                },
+                "required": ["scope", "name", "content"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.vsworker.skill.write({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/vsworker/skill/{name}/content": {
+      "get": {
+        "tags": ["vsworker"],
+        "operationId": "vsworker.skill.content",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "directory",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "workspace",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Skill body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerSkillContent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VsWorkerInvalidError | InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/VsWorkerInvalidError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InvalidRequestError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VsWorkerNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerNotFoundError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VsWorkerConflictError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerConflictError"
+                }
+              }
+            }
+          }
+        },
+        "description": "Read the frontmatter and body of one skill.",
+        "summary": "Read a skill",
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.vsworker.skill.content({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/vsworker/skill/{name}": {
+      "patch": {
+        "tags": ["vsworker"],
+        "operationId": "vsworker.skill.toggle",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "directory",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "workspace",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Config written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerRevisions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VsWorkerInvalidError | InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/VsWorkerInvalidError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InvalidRequestError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VsWorkerNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerNotFoundError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VsWorkerConflictError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerConflictError"
+                }
+              }
+            }
+          }
+        },
+        "description": "Enable or disable a skill bundled into this build.",
+        "summary": "Toggle a bundled skill",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "$ref": "#/components/schemas/VsWorkerScope"
+                  },
+                  "expectedRevision": {
+                    "type": "string"
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["scope", "enabled"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.vsworker.skill.toggle({\n  ...\n})"
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["vsworker"],
+        "operationId": "vsworker.skill.remove",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "directory",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "workspace",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Skill removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean",
+                  "description": "Skill removed"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VsWorkerInvalidError | InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/VsWorkerInvalidError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InvalidRequestError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VsWorkerNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerNotFoundError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VsWorkerConflictError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerConflictError"
+                }
+              }
+            }
+          }
+        },
+        "description": "Delete a skill directory that lives in a scope this build writes to.",
+        "summary": "Remove a skill",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "$ref": "#/components/schemas/VsWorkerScope"
+                  }
+                },
+                "required": ["scope"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.vsworker.skill.remove({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/vsworker/skill-source": {
+      "put": {
+        "tags": ["vsworker"],
+        "operationId": "vsworker.skill.sources",
+        "parameters": [
+          {
+            "name": "directory",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "workspace",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Config written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerRevisions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VsWorkerInvalidError | InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/VsWorkerInvalidError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InvalidRequestError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VsWorkerNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerNotFoundError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VsWorkerConflictError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerConflictError"
+                }
+              }
+            }
+          }
+        },
+        "description": "Replace the extra skill paths and urls in the chosen config file.",
+        "summary": "Set skill sources",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "$ref": "#/components/schemas/VsWorkerScope"
+                  },
+                  "expectedRevision": {
+                    "type": "string"
+                  },
+                  "paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "urls": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": ["scope", "paths", "urls"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.vsworker.skill.sources({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/vsworker/mcp": {
+      "get": {
+        "tags": ["vsworker"],
+        "operationId": "vsworker.mcp.list",
+        "parameters": [
+          {
+            "name": "directory",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "workspace",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bundled and user MCP servers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerMcpList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestError"
+                }
+              }
+            }
+          }
+        },
+        "description": "List the MCP servers bundled into this build alongside the ones declared in config.",
+        "summary": "List MCP servers",
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.vsworker.mcp.list({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/vsworker/mcp/{name}": {
+      "put": {
+        "tags": ["vsworker"],
+        "operationId": "vsworker.mcp.upsert",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "directory",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "workspace",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Config written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerRevisions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VsWorkerInvalidError | InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/VsWorkerInvalidError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InvalidRequestError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VsWorkerNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerNotFoundError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VsWorkerConflictError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerConflictError"
+                }
+              }
+            }
+          }
+        },
+        "description": "Write a full MCP server definition into the chosen config file.",
+        "summary": "Add or edit an MCP server",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "$ref": "#/components/schemas/VsWorkerScope"
+                  },
+                  "expectedRevision": {
+                    "type": "string"
+                  },
+                  "config": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/McpLocalConfig"
+                      },
+                      {
+                        "$ref": "#/components/schemas/McpRemoteConfig"
+                      }
+                    ]
+                  }
+                },
+                "required": ["scope", "config"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.vsworker.mcp.upsert({\n  ...\n})"
+          }
+        ]
+      },
+      "patch": {
+        "tags": ["vsworker"],
+        "operationId": "vsworker.mcp.toggle",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "directory",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "workspace",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Config written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerRevisions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VsWorkerInvalidError | InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/VsWorkerInvalidError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InvalidRequestError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VsWorkerNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerNotFoundError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VsWorkerConflictError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerConflictError"
+                }
+              }
+            }
+          }
+        },
+        "description": "Enable or disable an MCP server through the stock mcp.<name>.enabled key.",
+        "summary": "Toggle an MCP server",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "$ref": "#/components/schemas/VsWorkerScope"
+                  },
+                  "expectedRevision": {
+                    "type": "string"
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["scope", "enabled"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.vsworker.mcp.toggle({\n  ...\n})"
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["vsworker"],
+        "operationId": "vsworker.mcp.remove",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "directory",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "workspace",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerRevisions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VsWorkerInvalidError | InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/VsWorkerInvalidError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InvalidRequestError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VsWorkerNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerNotFoundError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VsWorkerConflictError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerConflictError"
+                }
+              }
+            }
+          }
+        },
+        "description": "Remove an MCP server definition from the chosen config file.",
+        "summary": "Remove an MCP server",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "$ref": "#/components/schemas/VsWorkerScope"
+                  },
+                  "expectedRevision": {
+                    "type": "string"
+                  }
+                },
+                "required": ["scope"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.vsworker.mcp.remove({\n  ...\n})"
+          }
+        ]
+      }
+    },
     "/experimental/workspace/adapter": {
       "get": {
         "tags": ["workspace"],
@@ -20561,6 +21900,40 @@
         "additionalProperties": false,
         "description": "Server configuration for opencode serve and web commands"
       },
+      "VsWorker": {
+        "type": "object",
+        "properties": {
+          "plugins": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "options": {
+                      "type": "object"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "skills": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "PermissionActionConfig": {
         "type": "string",
         "enum": ["ask", "allow", "deny"]
@@ -21245,6 +22618,9 @@
                 }
               ]
             }
+          },
+          "vsworker": {
+            "$ref": "#/components/schemas/VsWorker"
           },
           "share": {
             "type": "string",
@@ -23374,6 +24750,393 @@
           }
         },
         "required": ["type", "properties"],
+        "additionalProperties": false
+      },
+      "VsWorkerRevisions": {
+        "type": "object",
+        "properties": {
+          "global": {
+            "type": "string"
+          },
+          "project": {
+            "type": "string"
+          },
+          "globalFile": {
+            "type": "string"
+          },
+          "projectFile": {
+            "type": "string"
+          }
+        },
+        "required": ["global", "globalFile"],
+        "additionalProperties": false
+      },
+      "VsWorkerBundledState": {
+        "type": "string",
+        "enum": ["enabled", "disabled-by-config", "disabled-by-default", "shadowed", "killed"]
+      },
+      "VsWorkerScope": {
+        "type": "string",
+        "enum": ["global", "project"]
+      },
+      "VsWorkerBundledPlugin": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": ["npm", "github", "local"]
+          },
+          "spec": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/VsWorkerBundledState"
+          },
+          "shadowedBy": {
+            "type": "string"
+          },
+          "options": {
+            "type": "object"
+          },
+          "decidedIn": {
+            "$ref": "#/components/schemas/VsWorkerScope"
+          }
+        },
+        "required": ["id", "source", "spec", "version", "state"],
+        "additionalProperties": false
+      },
+      "VsWorkerOrigin": {
+        "type": "string",
+        "enum": ["global", "project", "discovered", "external", "url", "remote", "other"]
+      },
+      "VsWorkerUserPlugin": {
+        "type": "object",
+        "properties": {
+          "spec": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["npm", "file"]
+          },
+          "origin": {
+            "$ref": "#/components/schemas/VsWorkerOrigin"
+          },
+          "file": {
+            "type": "string"
+          },
+          "options": {
+            "type": "object"
+          },
+          "removable": {
+            "type": "boolean"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/VsWorkerScope"
+          }
+        },
+        "required": ["spec", "name", "kind", "origin", "file", "removable"],
+        "additionalProperties": false
+      },
+      "VsWorkerPluginList": {
+        "type": "object",
+        "properties": {
+          "revisions": {
+            "$ref": "#/components/schemas/VsWorkerRevisions"
+          },
+          "bundled": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VsWorkerBundledPlugin"
+            }
+          },
+          "user": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VsWorkerUserPlugin"
+            }
+          }
+        },
+        "required": ["revisions", "bundled", "user"],
+        "additionalProperties": false
+      },
+      "VsWorkerConflictError": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "expected": {
+            "type": "string"
+          },
+          "actual": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": ["file", "expected", "actual", "message"],
+        "additionalProperties": false
+      },
+      "VsWorkerNotFoundError": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "message"],
+        "additionalProperties": false
+      },
+      "VsWorkerInvalidError": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          }
+        },
+        "required": ["message"],
+        "additionalProperties": false
+      },
+      "VsWorkerBundledSkill": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/VsWorkerBundledState"
+          },
+          "shadowedBy": {
+            "type": "string"
+          },
+          "decidedIn": {
+            "$ref": "#/components/schemas/VsWorkerScope"
+          }
+        },
+        "required": ["id", "location", "state"],
+        "additionalProperties": false
+      },
+      "VsWorkerUserSkill": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/VsWorkerOrigin"
+          },
+          "editable": {
+            "type": "boolean"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/VsWorkerScope"
+          }
+        },
+        "required": ["name", "location", "origin", "editable"],
+        "additionalProperties": false
+      },
+      "VsWorkerSkillSources": {
+        "type": "object",
+        "properties": {
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["paths", "urls"],
+        "additionalProperties": false
+      },
+      "VsWorkerSkillList": {
+        "type": "object",
+        "properties": {
+          "revisions": {
+            "$ref": "#/components/schemas/VsWorkerRevisions"
+          },
+          "bundled": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VsWorkerBundledSkill"
+            }
+          },
+          "user": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VsWorkerUserSkill"
+            }
+          },
+          "sources": {
+            "$ref": "#/components/schemas/VsWorkerSkillSources"
+          }
+        },
+        "required": ["revisions", "bundled", "user", "sources"],
+        "additionalProperties": false
+      },
+      "VsWorkerSkillContent": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "editable": {
+            "type": "boolean"
+          }
+        },
+        "required": ["name", "location", "content", "editable"],
+        "additionalProperties": false
+      },
+      "VsWorkerBundledMcp": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["local", "remote"]
+          },
+          "target": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/VsWorkerBundledState"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MCPStatus"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/McpLocalConfig"
+              },
+              {
+                "$ref": "#/components/schemas/McpRemoteConfig"
+              }
+            ]
+          },
+          "decidedIn": {
+            "$ref": "#/components/schemas/VsWorkerScope"
+          }
+        },
+        "required": ["id", "type", "target", "state", "config"],
+        "additionalProperties": false
+      },
+      "VsWorkerUserMcp": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["local", "remote"]
+          },
+          "target": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/VsWorkerOrigin"
+          },
+          "file": {
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/VsWorkerScope"
+          },
+          "editable": {
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MCPStatus"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/McpLocalConfig"
+              },
+              {
+                "$ref": "#/components/schemas/McpRemoteConfig"
+              }
+            ]
+          }
+        },
+        "required": ["name", "type", "target", "enabled", "origin", "file", "editable", "config"],
+        "additionalProperties": false
+      },
+      "VsWorkerMcpList": {
+        "type": "object",
+        "properties": {
+          "revisions": {
+            "$ref": "#/components/schemas/VsWorkerRevisions"
+          },
+          "bundled": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VsWorkerBundledMcp"
+            }
+          },
+          "user": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VsWorkerUserMcp"
+            }
+          }
+        },
+        "required": ["revisions", "bundled", "user"],
         "additionalProperties": false
       },
       "Workspace": {
@@ -36874,6 +38637,10 @@
     {
       "name": "tui",
       "description": "Experimental HttpApi TUI routes."
+    },
+    {
+      "name": "vsworker",
+      "description": "VsWorker plugin, skill, and MCP management routes."
     },
     {
       "name": "workspace",

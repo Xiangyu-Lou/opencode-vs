@@ -48,6 +48,7 @@ function stub(input: StubInput): VsWorkerPlugins.Raw {
     spec: `${name}@1.0.0`,
     pkg: { name, version: "1.0.0" },
     options: input.options,
+    description: undefined,
     defaultEnabled: input.defaultEnabled ?? true,
     mod: {
       default: {

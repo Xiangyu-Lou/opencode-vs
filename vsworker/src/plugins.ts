@@ -13,6 +13,7 @@ export type Raw = {
   pkg: { name: string; version: string }
   options: Record<string, unknown> | undefined
   defaultEnabled: boolean
+  description: string | undefined
   mod: unknown
 }
 
@@ -92,6 +93,7 @@ export type Described = {
   source: Source
   spec: string
   version: string
+  description: string | undefined
   state: State
   shadowedBy?: string
 }
@@ -173,6 +175,7 @@ export function describe(input: SelectInput): Described[] {
       source: entry.source,
       spec: entry.spec,
       version: entry.pkg.version,
+      description: entry.description,
       state: dead ? ("killed" as const) : hit.state,
       ...(hit.state === "shadowed" ? { shadowedBy: entry.pkg.name } : {}),
     }

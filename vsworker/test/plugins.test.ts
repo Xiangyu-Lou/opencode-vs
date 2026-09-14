@@ -8,6 +8,7 @@ function raw(input: Partial<Raw> & Pick<Raw, "id">): Raw {
     pkg: { name: input.id, version: "1.0.0" },
     options: undefined,
     defaultEnabled: true,
+    description: undefined,
     mod: { default: { id: input.id, server: async () => ({}) } },
     ...input,
   }

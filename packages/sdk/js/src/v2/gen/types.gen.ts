@@ -1654,6 +1654,22 @@ export type ServerConfig = {
   cors?: Array<string>
 }
 
+export type VsWorker = {
+  plugins?: {
+    [key: string]:
+      | boolean
+      | {
+          enabled?: boolean
+          options?: {
+            [key: string]: unknown
+          }
+        }
+  }
+  skills?: {
+    [key: string]: boolean
+  }
+}
+
 export type PermissionActionConfig = "ask" | "allow" | "deny"
 
 export type PermissionObjectConfig = {
@@ -1924,6 +1940,7 @@ export type Config = {
         },
       ]
   >
+  vsworker?: VsWorker
   share?: "manual" | "auto" | "disabled"
   autoshare?: boolean
   /**
@@ -2653,6 +2670,137 @@ export type EventTuiSessionSelect = {
      */
     sessionID: string
   }
+}
+
+export type VsWorkerRevisions = {
+  global: string
+  project?: string
+  globalFile: string
+  projectFile?: string
+}
+
+export type VsWorkerBundledState = "enabled" | "disabled-by-config" | "disabled-by-default" | "shadowed" | "killed"
+
+export type VsWorkerScope = "global" | "project"
+
+export type VsWorkerBundledPlugin = {
+  id: string
+  source: "npm" | "github" | "local"
+  spec: string
+  version: string
+  description?: string
+  state: VsWorkerBundledState
+  shadowedBy?: string
+  options?: {
+    [key: string]: unknown
+  }
+  decidedIn?: VsWorkerScope
+}
+
+export type VsWorkerOrigin = "global" | "project" | "discovered" | "external" | "url" | "remote" | "other"
+
+export type VsWorkerUserPlugin = {
+  spec: string
+  name: string
+  kind: "npm" | "file"
+  origin: VsWorkerOrigin
+  file: string
+  options?: {
+    [key: string]: unknown
+  }
+  removable: boolean
+  scope?: VsWorkerScope
+}
+
+export type VsWorkerPluginList = {
+  revisions: VsWorkerRevisions
+  bundled: Array<VsWorkerBundledPlugin>
+  user: Array<VsWorkerUserPlugin>
+}
+
+export type VsWorkerConflictError = {
+  file: string
+  expected: string
+  actual: string
+  message: string
+}
+
+export type VsWorkerNotFoundError = {
+  id: string
+  message: string
+}
+
+export type VsWorkerInvalidError = {
+  message: string
+  field?: string
+}
+
+export type VsWorkerBundledSkill = {
+  id: string
+  description?: string
+  location: string
+  state: VsWorkerBundledState
+  shadowedBy?: string
+  decidedIn?: VsWorkerScope
+}
+
+export type VsWorkerUserSkill = {
+  name: string
+  description?: string
+  location: string
+  origin: VsWorkerOrigin
+  editable: boolean
+  scope?: VsWorkerScope
+}
+
+export type VsWorkerSkillSources = {
+  paths: Array<string>
+  urls: Array<string>
+}
+
+export type VsWorkerSkillList = {
+  revisions: VsWorkerRevisions
+  bundled: Array<VsWorkerBundledSkill>
+  user: Array<VsWorkerUserSkill>
+  sources: VsWorkerSkillSources
+}
+
+export type VsWorkerSkillContent = {
+  name: string
+  description?: string
+  location: string
+  content: string
+  editable: boolean
+}
+
+export type VsWorkerBundledMcp = {
+  id: string
+  type: "local" | "remote"
+  target: string
+  description?: string
+  state: VsWorkerBundledState
+  status?: McpStatus
+  config: McpLocalConfig | McpRemoteConfig
+  decidedIn?: VsWorkerScope
+}
+
+export type VsWorkerUserMcp = {
+  name: string
+  type: "local" | "remote"
+  target: string
+  enabled: boolean
+  origin: VsWorkerOrigin
+  file: string
+  scope?: VsWorkerScope
+  editable: boolean
+  status?: McpStatus
+  config: McpLocalConfig | McpRemoteConfig
+}
+
+export type VsWorkerMcpList = {
+  revisions: VsWorkerRevisions
+  bundled: Array<VsWorkerBundledMcp>
+  user: Array<VsWorkerUserMcp>
 }
 
 export type Workspace = {
@@ -11002,6 +11150,544 @@ export type TuiControlResponseResponses = {
 }
 
 export type TuiControlResponseResponse = TuiControlResponseResponses[keyof TuiControlResponseResponses]
+
+export type VsworkerPluginListData = {
+  body?: never
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vsworker/plugin"
+}
+
+export type VsworkerPluginListErrors = {
+  /**
+   * Bad request
+   */
+  400: BadRequestError
+}
+
+export type VsworkerPluginListError = VsworkerPluginListErrors[keyof VsworkerPluginListErrors]
+
+export type VsworkerPluginListResponses = {
+  /**
+   * Bundled and user plugins
+   */
+  200: VsWorkerPluginList
+}
+
+export type VsworkerPluginListResponse = VsworkerPluginListResponses[keyof VsworkerPluginListResponses]
+
+export type VsworkerPluginAddData = {
+  body?: {
+    scope: VsWorkerScope
+    expectedRevision?: string
+    spec: string
+  }
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vsworker/plugin"
+}
+
+export type VsworkerPluginAddErrors = {
+  /**
+   * VsWorkerInvalidError | InvalidRequestError
+   */
+  400: VsWorkerInvalidError | InvalidRequestError
+  /**
+   * VsWorkerNotFoundError
+   */
+  404: VsWorkerNotFoundError
+  /**
+   * VsWorkerConflictError
+   */
+  409: VsWorkerConflictError
+}
+
+export type VsworkerPluginAddError = VsworkerPluginAddErrors[keyof VsworkerPluginAddErrors]
+
+export type VsworkerPluginAddResponses = {
+  /**
+   * Plugin added
+   */
+  200: VsWorkerRevisions
+}
+
+export type VsworkerPluginAddResponse = VsworkerPluginAddResponses[keyof VsworkerPluginAddResponses]
+
+export type VsworkerPluginRemoveData = {
+  body?: {
+    scope: VsWorkerScope
+    expectedRevision?: string
+    spec: string
+  }
+  path: {
+    id: string
+  }
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vsworker/plugin/{id}"
+}
+
+export type VsworkerPluginRemoveErrors = {
+  /**
+   * VsWorkerInvalidError | InvalidRequestError
+   */
+  400: VsWorkerInvalidError | InvalidRequestError
+  /**
+   * VsWorkerNotFoundError
+   */
+  404: VsWorkerNotFoundError
+  /**
+   * VsWorkerConflictError
+   */
+  409: VsWorkerConflictError
+}
+
+export type VsworkerPluginRemoveError = VsworkerPluginRemoveErrors[keyof VsworkerPluginRemoveErrors]
+
+export type VsworkerPluginRemoveResponses = {
+  /**
+   * Plugin removed
+   */
+  200: VsWorkerRevisions
+}
+
+export type VsworkerPluginRemoveResponse = VsworkerPluginRemoveResponses[keyof VsworkerPluginRemoveResponses]
+
+export type VsworkerPluginUpdateData = {
+  body?: {
+    scope: VsWorkerScope
+    expectedRevision?: string
+    enabled?: boolean
+    options?: {
+      [key: string]: unknown
+    }
+  }
+  path: {
+    id: string
+  }
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vsworker/plugin/{id}"
+}
+
+export type VsworkerPluginUpdateErrors = {
+  /**
+   * VsWorkerInvalidError | InvalidRequestError
+   */
+  400: VsWorkerInvalidError | InvalidRequestError
+  /**
+   * VsWorkerNotFoundError
+   */
+  404: VsWorkerNotFoundError
+  /**
+   * VsWorkerConflictError
+   */
+  409: VsWorkerConflictError
+}
+
+export type VsworkerPluginUpdateError = VsworkerPluginUpdateErrors[keyof VsworkerPluginUpdateErrors]
+
+export type VsworkerPluginUpdateResponses = {
+  /**
+   * Config written
+   */
+  200: VsWorkerRevisions
+}
+
+export type VsworkerPluginUpdateResponse = VsworkerPluginUpdateResponses[keyof VsworkerPluginUpdateResponses]
+
+export type VsworkerSkillListData = {
+  body?: never
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vsworker/skill"
+}
+
+export type VsworkerSkillListErrors = {
+  /**
+   * Bad request
+   */
+  400: BadRequestError
+}
+
+export type VsworkerSkillListError = VsworkerSkillListErrors[keyof VsworkerSkillListErrors]
+
+export type VsworkerSkillListResponses = {
+  /**
+   * Bundled, user, and discovered skills
+   */
+  200: VsWorkerSkillList
+}
+
+export type VsworkerSkillListResponse = VsworkerSkillListResponses[keyof VsworkerSkillListResponses]
+
+export type VsworkerSkillWriteData = {
+  body?: {
+    scope: VsWorkerScope
+    name: string
+    description?: string
+    content: string
+  }
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vsworker/skill"
+}
+
+export type VsworkerSkillWriteErrors = {
+  /**
+   * VsWorkerInvalidError | InvalidRequestError
+   */
+  400: VsWorkerInvalidError | InvalidRequestError
+  /**
+   * VsWorkerNotFoundError
+   */
+  404: VsWorkerNotFoundError
+  /**
+   * VsWorkerConflictError
+   */
+  409: VsWorkerConflictError
+}
+
+export type VsworkerSkillWriteError = VsworkerSkillWriteErrors[keyof VsworkerSkillWriteErrors]
+
+export type VsworkerSkillWriteResponses = {
+  /**
+   * Skill written
+   */
+  200: VsWorkerSkillContent
+}
+
+export type VsworkerSkillWriteResponse = VsworkerSkillWriteResponses[keyof VsworkerSkillWriteResponses]
+
+export type VsworkerSkillContentData = {
+  body?: never
+  path: {
+    name: string
+  }
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vsworker/skill/{name}/content"
+}
+
+export type VsworkerSkillContentErrors = {
+  /**
+   * VsWorkerInvalidError | InvalidRequestError
+   */
+  400: VsWorkerInvalidError | InvalidRequestError
+  /**
+   * VsWorkerNotFoundError
+   */
+  404: VsWorkerNotFoundError
+  /**
+   * VsWorkerConflictError
+   */
+  409: VsWorkerConflictError
+}
+
+export type VsworkerSkillContentError = VsworkerSkillContentErrors[keyof VsworkerSkillContentErrors]
+
+export type VsworkerSkillContentResponses = {
+  /**
+   * Skill body
+   */
+  200: VsWorkerSkillContent
+}
+
+export type VsworkerSkillContentResponse = VsworkerSkillContentResponses[keyof VsworkerSkillContentResponses]
+
+export type VsworkerSkillRemoveData = {
+  body?: {
+    scope: VsWorkerScope
+  }
+  path: {
+    name: string
+  }
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vsworker/skill/{name}"
+}
+
+export type VsworkerSkillRemoveErrors = {
+  /**
+   * VsWorkerInvalidError | InvalidRequestError
+   */
+  400: VsWorkerInvalidError | InvalidRequestError
+  /**
+   * VsWorkerNotFoundError
+   */
+  404: VsWorkerNotFoundError
+  /**
+   * VsWorkerConflictError
+   */
+  409: VsWorkerConflictError
+}
+
+export type VsworkerSkillRemoveError = VsworkerSkillRemoveErrors[keyof VsworkerSkillRemoveErrors]
+
+export type VsworkerSkillRemoveResponses = {
+  /**
+   * Skill removed
+   */
+  200: boolean
+}
+
+export type VsworkerSkillRemoveResponse = VsworkerSkillRemoveResponses[keyof VsworkerSkillRemoveResponses]
+
+export type VsworkerSkillToggleData = {
+  body?: {
+    scope: VsWorkerScope
+    expectedRevision?: string
+    enabled: boolean
+  }
+  path: {
+    name: string
+  }
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vsworker/skill/{name}"
+}
+
+export type VsworkerSkillToggleErrors = {
+  /**
+   * VsWorkerInvalidError | InvalidRequestError
+   */
+  400: VsWorkerInvalidError | InvalidRequestError
+  /**
+   * VsWorkerNotFoundError
+   */
+  404: VsWorkerNotFoundError
+  /**
+   * VsWorkerConflictError
+   */
+  409: VsWorkerConflictError
+}
+
+export type VsworkerSkillToggleError = VsworkerSkillToggleErrors[keyof VsworkerSkillToggleErrors]
+
+export type VsworkerSkillToggleResponses = {
+  /**
+   * Config written
+   */
+  200: VsWorkerRevisions
+}
+
+export type VsworkerSkillToggleResponse = VsworkerSkillToggleResponses[keyof VsworkerSkillToggleResponses]
+
+export type VsworkerSkillSourcesData = {
+  body?: {
+    scope: VsWorkerScope
+    expectedRevision?: string
+    paths: Array<string>
+    urls: Array<string>
+  }
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vsworker/skill-source"
+}
+
+export type VsworkerSkillSourcesErrors = {
+  /**
+   * VsWorkerInvalidError | InvalidRequestError
+   */
+  400: VsWorkerInvalidError | InvalidRequestError
+  /**
+   * VsWorkerNotFoundError
+   */
+  404: VsWorkerNotFoundError
+  /**
+   * VsWorkerConflictError
+   */
+  409: VsWorkerConflictError
+}
+
+export type VsworkerSkillSourcesError = VsworkerSkillSourcesErrors[keyof VsworkerSkillSourcesErrors]
+
+export type VsworkerSkillSourcesResponses = {
+  /**
+   * Config written
+   */
+  200: VsWorkerRevisions
+}
+
+export type VsworkerSkillSourcesResponse = VsworkerSkillSourcesResponses[keyof VsworkerSkillSourcesResponses]
+
+export type VsworkerMcpListData = {
+  body?: never
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vsworker/mcp"
+}
+
+export type VsworkerMcpListErrors = {
+  /**
+   * Bad request
+   */
+  400: BadRequestError
+}
+
+export type VsworkerMcpListError = VsworkerMcpListErrors[keyof VsworkerMcpListErrors]
+
+export type VsworkerMcpListResponses = {
+  /**
+   * Bundled and user MCP servers
+   */
+  200: VsWorkerMcpList
+}
+
+export type VsworkerMcpListResponse = VsworkerMcpListResponses[keyof VsworkerMcpListResponses]
+
+export type VsworkerMcpRemoveData = {
+  body?: {
+    scope: VsWorkerScope
+    expectedRevision?: string
+  }
+  path: {
+    name: string
+  }
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vsworker/mcp/{name}"
+}
+
+export type VsworkerMcpRemoveErrors = {
+  /**
+   * VsWorkerInvalidError | InvalidRequestError
+   */
+  400: VsWorkerInvalidError | InvalidRequestError
+  /**
+   * VsWorkerNotFoundError
+   */
+  404: VsWorkerNotFoundError
+  /**
+   * VsWorkerConflictError
+   */
+  409: VsWorkerConflictError
+}
+
+export type VsworkerMcpRemoveError = VsworkerMcpRemoveErrors[keyof VsworkerMcpRemoveErrors]
+
+export type VsworkerMcpRemoveResponses = {
+  /**
+   * Server removed
+   */
+  200: VsWorkerRevisions
+}
+
+export type VsworkerMcpRemoveResponse = VsworkerMcpRemoveResponses[keyof VsworkerMcpRemoveResponses]
+
+export type VsworkerMcpToggleData = {
+  body?: {
+    scope: VsWorkerScope
+    expectedRevision?: string
+    enabled: boolean
+  }
+  path: {
+    name: string
+  }
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vsworker/mcp/{name}"
+}
+
+export type VsworkerMcpToggleErrors = {
+  /**
+   * VsWorkerInvalidError | InvalidRequestError
+   */
+  400: VsWorkerInvalidError | InvalidRequestError
+  /**
+   * VsWorkerNotFoundError
+   */
+  404: VsWorkerNotFoundError
+  /**
+   * VsWorkerConflictError
+   */
+  409: VsWorkerConflictError
+}
+
+export type VsworkerMcpToggleError = VsworkerMcpToggleErrors[keyof VsworkerMcpToggleErrors]
+
+export type VsworkerMcpToggleResponses = {
+  /**
+   * Config written
+   */
+  200: VsWorkerRevisions
+}
+
+export type VsworkerMcpToggleResponse = VsworkerMcpToggleResponses[keyof VsworkerMcpToggleResponses]
+
+export type VsworkerMcpUpsertData = {
+  body?: {
+    scope: VsWorkerScope
+    expectedRevision?: string
+    config: McpLocalConfig | McpRemoteConfig
+  }
+  path: {
+    name: string
+  }
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vsworker/mcp/{name}"
+}
+
+export type VsworkerMcpUpsertErrors = {
+  /**
+   * VsWorkerInvalidError | InvalidRequestError
+   */
+  400: VsWorkerInvalidError | InvalidRequestError
+  /**
+   * VsWorkerNotFoundError
+   */
+  404: VsWorkerNotFoundError
+  /**
+   * VsWorkerConflictError
+   */
+  409: VsWorkerConflictError
+}
+
+export type VsworkerMcpUpsertError = VsworkerMcpUpsertErrors[keyof VsworkerMcpUpsertErrors]
+
+export type VsworkerMcpUpsertResponses = {
+  /**
+   * Config written
+   */
+  200: VsWorkerRevisions
+}
+
+export type VsworkerMcpUpsertResponse = VsworkerMcpUpsertResponses[keyof VsworkerMcpUpsertResponses]
 
 export type ExperimentalWorkspaceAdapterListData = {
   body?: never
