@@ -4,7 +4,7 @@ VsWorker ships a curated set of plugins, MCP server definitions, and skills insi
 into the CLI binary and the desktop server bundle at build time, so an end user never needs npm, GitHub, or any
 network access for them to work. Updating any of them means shipping a new VsWorker release.
 
-Everything in this directory is fork-owned. Upstream OpenCode files are touched in exactly nine places, seven of
+Everything in this directory is fork-owned. Upstream OpenCode files are touched in exactly eleven places, nine of
 them marked `// vsworker-seam` and all of them listed in [UPSTREAM.md](./UPSTREAM.md).
 
 ## The manifest
@@ -84,7 +84,7 @@ Two things a bundled definition cannot do for you:
 
 Skills are vendored in this repository under `vsworker/skills/<id>/`, `SKILL.md` plus whatever `scripts/` or
 `references/` files it needs. Every file is inlined into the build and written to
-`~/.cache/opencode/vsworker/skills/<id>/` the first time a build that has skills enabled starts. They need a real
+`~/.cache/vsworker/vsworker/skills/<id>/` the first time a build that has skills enabled starts. They need a real
 directory on disk because the `skill` tool lists sibling files and slash commands resolve relative paths.
 
 ```jsonc
@@ -111,9 +111,9 @@ bun run --cwd vsworker bundle import mcp <name> [--from <file>] [--id <id>] [--o
 bun run --cwd vsworker bundle import skill <name> [--from <dir>] [--force]
 ```
 
-`import mcp` reads `~/.config/opencode/opencode.json` (or `--from`), accepts both the flat and the
+`import mcp` reads `~/.config/vsworker/opencode.json` (or `--from`), accepts both the flat and the
 `mcp.servers` shapes, moves `enabled` into `defaultEnabled`, and warns about literal secrets. `import skill`
-copies the directory out of `~/.config/opencode/skills/<name>` into `vsworker/skills/<name>`. Both append to
+copies the directory out of `~/.config/vsworker/skills/<name>` into `vsworker/skills/<name>`. Both append to
 `bundle.jsonc` without disturbing its comments.
 
 At runtime:
@@ -146,7 +146,7 @@ Three ways to override a bundled entry entirely, one per kind:
 - **MCP server**: write a full `mcp.<id>` definition, with a `type`. Note that an entry _without_ a `type` keeps
   only `enabled`, because config decoding drops the rest, so partial edits are not possible: copy the whole
   definition if you want to change a URL or a header.
-- **Skill**: put a skill of the same name in `.opencode/skills/`, `~/.claude/skills/`, or any other discovered
+- **Skill**: put a skill of the same name in `.opencode/skills/`, `~/.config/vsworker/skills/`, `~/.claude/skills/`, or any other discovered
   location. It wins, and the log records a duplicate skill name.
 
 TUI-kind plugins use the TUI's own mechanism instead: `plugin_enabled` in `tui.json`, or the plugin manager inside

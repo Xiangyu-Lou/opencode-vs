@@ -7,7 +7,11 @@ import { Flock } from "./util/flock"
 import { Flag } from "./flag/flag"
 import { makeGlobalNode } from "./effect/app-node"
 
-const app = "opencode"
+// vsworker-seam: VsWorker owns its own XDG directories. Upstream opencode is installed alongside it on the same
+// machines (the npm CLI and OpenCode.app), and sharing ~/.config/opencode, auth.json, the snapshot store and the
+// state locks would let two different products write each other's files. Project-level .opencode/ config and the
+// opencode.json filename stay shared on purpose: those belong to the repository, not to the install.
+const app = "vsworker"
 const data = path.join(xdgData!, app)
 const cache = path.join(xdgCache!, app)
 const config = path.join(xdgConfig!, app)

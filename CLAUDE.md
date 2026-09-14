@@ -75,13 +75,13 @@ cd packages/core && bun run migration --check
 
 ## Local environment (this fork)
 
-This checkout is for secondary development on top of upstream `anomalyco/opencode`. A daily-use release build (npm `opencode-ai`, installed under nvm at `~/.nvm/versions/node/v24.13.0/bin/opencode`) coexists on this machine and must never be affected by work here.
+This checkout is for secondary development on top of upstream `anomalyco/opencode`. A daily-use release build (npm `opencode-ai`, installed under nvm at `~/.nvm/versions/node/v24.13.0/bin/opencode`) and the upstream `OpenCode.app` coexist on this machine and must never be affected by work here.
 
-Both builds resolve global paths through `xdg-basedir` (`packages/core/src/global.ts`), so with default env they share `~/.config/opencode/` (`opencode.json`, `tui.json`, plugin `package.json` + `node_modules`), `~/.local/share/opencode/` (`auth.json`, `storage/`, `snapshot/`, `repos/`, `log/`, `tool-output/`), `~/.local/state/opencode/` (kv, prompt history, locks), and `~/.cache/opencode/`. Only the SQLite database is separated by default: source runs have no `OPENCODE_CHANNEL` define, so `InstallationChannel` is `local` and `bun dev` opens `opencode-local.db` instead of the release's `opencode.db` (`packages/core/src/database/database.ts`). Migrations run automatically whenever a database opens, so never set `OPENCODE_DISABLE_CHANNEL_DB` or point `OPENCODE_DB` at the daily database.
+**The two products no longer share a directory (2026-09-13).** `app` in `packages/core/src/global.ts` is `vsworker`, so every build of this fork resolves `~/.config/vsworker/`, `~/.local/share/vsworker/` (`auth.json`, `storage/`, `snapshot/`, `repos/`, `log/`, `tool-output/`), `~/.local/state/vsworker/` and `~/.cache/vsworker/`, while the daily install keeps the `opencode` ones. Authentication is therefore per product: the fork has its own `auth.json` and providers are logged in again inside it. The SQLite file is separated on top of that by channel: source runs have no `OPENCODE_CHANNEL` define, so `InstallationChannel` is `local` and `bun dev` opens `opencode-local.db`; a build made with `OPENCODE_CHANNEL=vsworker` opens `opencode-vsworker.db` (`packages/core/src/database/database.ts`). Migrations run automatically whenever a database opens, so never set `OPENCODE_DISABLE_CHANNEL_DB` or point `OPENCODE_DB` at the daily database. Project-level `.opencode/` directories and the `opencode.json` filename stay shared on purpose: those belong to a repository, not to an install.
 
 Run every dev command (TUI, `serve`, `web`, desktop, built binaries; tests already isolate themselves through the preload) through the launcher `~/.opencode-dev/bin/opencode-dev`. It points the four XDG variables under `~/.opencode-dev/`, sets `OPENCODE_DISABLE_AUTOUPDATE=1`, adds `~/.bun/bin` to `PATH`, and dispatches on its first argument: no argument is the TUI in the caller's directory, `<dir>` is the TUI there, `app` is the `packages/app` Vite dev server, `desktop` is the Electron app in dev mode, and anything else (`serve`, `web`, `auth login`, ...) passes through to the repo's `bun dev`.
 
-Equivalent environment when the launcher cannot be used (scope it to the command, not the shell, because git also honors `XDG_CONFIG_HOME`): `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_STATE_HOME`, `XDG_CACHE_HOME` under `~/.opencode-dev/{config,data,state,cache}` plus `OPENCODE_DISABLE_AUTOUPDATE=1`. Dev-build files then live at `~/.opencode-dev/config/opencode/opencode.json` (providers, `mcp`, agents), `~/.opencode-dev/config/opencode/tui.json`, `~/.opencode-dev/data/opencode/auth.json` (written by `/connect` or `opencode-dev auth login`), and the databases under `~/.opencode-dev/data/opencode/`.
+Equivalent environment when the launcher cannot be used (scope it to the command, not the shell, because git also honors `XDG_CONFIG_HOME`): `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_STATE_HOME`, `XDG_CACHE_HOME` under `~/.opencode-dev/{config,data,state,cache}` plus `OPENCODE_DISABLE_AUTOUPDATE=1`. Dev-build files then live at `~/.opencode-dev/config/vsworker/opencode.json` (providers, `mcp`, agents), `~/.opencode-dev/config/vsworker/tui.json`, `~/.opencode-dev/data/vsworker/auth.json` (written by `/connect` or `opencode-dev auth login`), and the databases under `~/.opencode-dev/data/vsworker/`. The `…/opencode/` subdirectories inside the sandbox were renamed to `vsworker/` on 2026-09-13 to follow `app`; nothing else about the launcher changed.
 
 ### Runbook (every surface verified on this machine on 2026-09-04)
 
@@ -192,10 +192,10 @@ This fork ships a curated set of plugins, MCP server definitions, and skills com
 manifest is `vsworker/bundle.jsonc`; `bun run --cwd vsworker bundle generate` regenerates `vsworker/src/*.gen.ts`,
 `vsworker/bundle.schema.json`, and the `dependencies` block of `vsworker/package.json`, then runs `bun install`.
 Commit all of those, plus anything under `vsworker/skills/`, with `bun.lock`. `bundle check` is the CI drift gate
-and `bundle check --seams` verifies the seven marked edits in upstream files survived the last merge (nine files
+and `bundle check --seams` verifies the nine marked edits in upstream files survived the last merge (eleven files
 are touched; the two `package.json` ones cannot carry a comment).
 
-Skills are vendored under `vsworker/skills/<id>/` and written to `~/.cache/opencode/vsworker/skills/` at runtime,
+Skills are vendored under `vsworker/skills/<id>/` and written to `~/.cache/vsworker/vsworker/skills/` at runtime,
 because the skill tool needs a real directory. MCP entries carry a definition, not a server: keep credentials out
 of them and use `{env:VAR}` / `{file:path}`, which are substituted at config load.
 

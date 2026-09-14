@@ -53,5 +53,5 @@ jobs:
           # Enabling a skill has to write the cache directory, which is the half that only exists at runtime.
           "$BIN" vsworker skills enable hello -g
           "$BIN" vsworker skills list
-          test -f "${XDG_CACHE_HOME:-$HOME/.cache}/opencode/vsworker/skills/hello/SKILL.md"
+          test -f "${XDG_CACHE_HOME:-$HOME/.cache}/vsworker/vsworker/skills/hello/SKILL.md"
         working-directory: packages/opencode

@@ -571,11 +571,12 @@ async function bump(id: string, target: string | undefined) {
 }
 
 // Resolved the same way xdg-basedir does it, rather than by importing @opencode-ai/core/global, which creates
-// directories as a side effect of being imported.
+// directories as a side effect of being imported. Keep the directory name in step with `app` in
+// packages/core/src/global.ts.
 function configDir() {
   if (process.env.OPENCODE_CONFIG_DIR) return process.env.OPENCODE_CONFIG_DIR
   const xdg = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config")
-  return path.join(xdg, "opencode")
+  return path.join(xdg, "vsworker")
 }
 
 function configFile(from: string | undefined) {
@@ -723,6 +724,8 @@ const SEAMS: { file: string; marker: string }[] = [
   { file: "packages/core/src/v1/config/config.ts", marker: "vsworker-seam" },
   { file: "packages/opencode/src/index.ts", marker: "vsworker-seam" },
   { file: "packages/opencode/test/preload.ts", marker: "vsworker-seam" },
+  { file: "packages/core/src/global.ts", marker: "vsworker-seam" },
+  { file: "packages/opencode/test/cli/mcp-add.test.ts", marker: "vsworker-seam" },
 ]
 
 async function seams() {
