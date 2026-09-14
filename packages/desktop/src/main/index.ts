@@ -54,11 +54,14 @@ const APP_NAMES: Record<string, string> = {
   dev: "VsWorker Dev",
   beta: "VsWorker Beta",
   prod: "VsWorker",
+  vsworker: "VsWorker",
 }
 const APP_IDS: Record<string, string> = {
   dev: "ai.opencode.desktop.dev",
   beta: "ai.opencode.desktop.beta",
   prod: "ai.opencode.desktop",
+  // Its own identity, so a VsWorker install never shares Electron data with an OpenCode.app on the same machine.
+  vsworker: "com.vsworker.desktop",
 }
 const TEST_ONBOARDING = process.env.OPENCODE_TEST_ONBOARDING === "1"
 const SIDECAR_VERSION = process.env.OPENCODE_SIDECAR_V2 === "1" ? "v2" : "v1"

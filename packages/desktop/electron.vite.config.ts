@@ -7,12 +7,18 @@ const OPENCODE_SERVER_DIST = "../opencode/dist/node"
 
 const channel = (() => {
   const raw = process.env.OPENCODE_CHANNEL
-  if (raw === "dev" || raw === "beta" || raw === "prod") return raw
+  if (raw === "dev" || raw === "beta" || raw === "prod" || raw === "vsworker") return raw
   if (process.env.OPENCODE_CHANNEL === "latest") return "prod"
   return "dev"
 })()
 
-const nodePtyPkg = `@lydell/node-pty-${process.platform}-${process.arch}`
+// node-pty is a prebuilt native module, one npm package per platform, and the main bundle imports it statically.
+// The package name therefore has to match the platform the BUILD is for, not the machine doing the building, or a
+// cross-built app starts by importing a module that is not in it. electron-builder takes the target from its own
+// flags, which this config cannot see, so a cross build states it here.
+const targetPlatform = process.env.OPENCODE_TARGET_PLATFORM || process.platform
+const targetArch = process.env.OPENCODE_TARGET_ARCH || process.arch
+const nodePtyPkg = `@lydell/node-pty-${targetPlatform}-${targetArch}`
 
 const sentry =
   process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT

@@ -202,6 +202,14 @@ skill a user drops on disk alike (`vsworker/src/env.ts`, seam in `packages/openc
 entries carry a definition, not a server: keep credentials out of them and use `{env:VAR}` / `{file:path}`, which
 are substituted at config load.
 
+The desktop app has a fourth release channel, `vsworker`: `OPENCODE_CHANNEL=vsworker bun run build` in
+`packages/desktop`, then `electron-builder --mac --arm64`, produces `VsWorker.app` with bundle id
+`com.vsworker.desktop` and no update feed, so it never collides with an installed `OpenCode.app`. The same
+channel builds Windows (`--win --x64`, NSIS, installs to `%LOCALAPPDATA%\Programs\vsworker-desktop`); a cross
+build from macOS additionally needs `OPENCODE_TARGET_PLATFORM` / `OPENCODE_TARGET_ARCH` set for `bun run build`
+and the matching `@lydell/node-pty-<platform>-<arch>` installed, because the main bundle imports that prebuilt
+module statically. See the build section of `vsworker/README.md`.
+
 Read `vsworker/README.md` before adding anything (the manifest reference, the `bundle import` helpers, and the
 constraints compiled-in content has to satisfy) and `vsworker/UPSTREAM.md` before merging upstream (the seam
 inventory and the merge runbook). Upstream suites keep the stock sets because `packages/opencode/test/preload.ts`

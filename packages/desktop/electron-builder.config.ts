@@ -31,7 +31,7 @@ async function signWindows(configuration: { path: string }) {
 
 const channel = (() => {
   const raw = process.env.OPENCODE_CHANNEL
-  if (raw === "dev" || raw === "beta" || raw === "prod") return raw
+  if (raw === "dev" || raw === "beta" || raw === "prod" || raw === "vsworker") return raw
   return "dev"
 })()
 
@@ -39,6 +39,9 @@ const APP_IDS = {
   dev: "ai.opencode.desktop.dev",
   beta: "ai.opencode.desktop.beta",
   prod: "ai.opencode.desktop",
+  // This fork's own identity. It has to differ from every upstream id, because an OpenCode.app installed on the
+  // same machine would otherwise share the app id, the Electron user data directory, and the Dock entry.
+  vsworker: "com.vsworker.desktop",
 } as const
 
 const getBase = (appId: string): Configuration => ({
@@ -48,6 +51,10 @@ const getBase = (appId: string): Configuration => ({
     buildResources: "resources",
   },
   extraMetadata: {
+    // CI runs scripts/prepare.ts to stamp package.json before packaging. A local VsWorker build sets
+    // OPENCODE_VERSION instead, so the app reports the same version as the server bundled inside it without
+    // the packaging step rewriting a tracked file.
+    ...(process.env.OPENCODE_VERSION ? { version: process.env.OPENCODE_VERSION } : {}),
     // Linux launchers are .desktop files, so this is the desktop file name,
     // not just the app id. For prod, app id "ai.opencode.desktop" becomes
     // "ai.opencode.desktop.desktop".
@@ -162,6 +169,28 @@ function getConfig() {
         publish: { provider: "github", owner: "anomalyco", repo: "opencode", channel: "latest" },
         deb: { fpm: [metainfoFpm(appId), legacyDesktopEntryFpm] },
         rpm: { packageName: "opencode", fpm: [metainfoFpm(appId), legacyDesktopEntryFpm] },
+      }
+    }
+    case "vsworker": {
+      // No `publish`: VsWorker releases are distributed by hand, and the updater is off for this channel.
+      return {
+        ...base,
+        appId,
+        productName: "VsWorker",
+        mac: {
+          ...base.mac,
+          // Apple Silicon refuses to launch a bundle with no code signature, and this fork has no Developer ID.
+          // "-" is the ad-hoc identity: it satisfies the loader without asserting an origin, which is what an
+          // internally distributed build needs. electron-builder's own ad-hoc fallback does not fire when the
+          // keychain holds any self-signed certificate, so it is requested explicitly. Set CSC_NAME to a real
+          // "Developer ID Application" identity to sign properly, and add APPLE_API_KEY / APPLE_API_KEY_ID /
+          // APPLE_API_ISSUER to notarize as CI does.
+          identity: process.env.CSC_NAME ?? "-",
+          notarize: Boolean(process.env.CSC_NAME),
+        },
+        dmg: { sign: Boolean(process.env.CSC_NAME) },
+        deb: { fpm: [metainfoFpm(appId)] },
+        rpm: { packageName: "vsworker", fpm: [metainfoFpm(appId)] },
       }
     }
   }

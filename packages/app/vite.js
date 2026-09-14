@@ -8,7 +8,11 @@ const theme = fileURLToPath(new URL("./public/oc-theme-preload.js", import.meta.
 const channel = (() => {
   const raw = process.env.OPENCODE_CHANNEL
   if (raw === "dev" || raw === "beta" || raw === "prod") return raw
-  if (process.env.OPENCODE_CHANNEL === "latest") return "prod"
+  if (raw === "latest") return "prod"
+  // The renderer uses this only to decide between release and development affordances: the DEV badge, the debug
+  // bar, and the unreleased layout defaults. A VsWorker build is a release, so it maps to "prod" the way "latest"
+  // does; the app's real identity comes from the main process.
+  if (raw === "vsworker") return "prod"
   return "dev"
 })()
 

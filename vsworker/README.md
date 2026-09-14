@@ -227,6 +227,69 @@ Copy `plugins/hello/` or `skills/hello/` and add a manifest entry. The `hello` p
 `defaultEnabled: false`, as the smoke test for this pipeline, so a release is unaffected until someone enables
 it. The `hello` skill is on, so a build can be checked end to end without editing any config.
 
+## Living next to the official OpenCode
+
+VsWorker is installed alongside upstream opencode on the same machines, so it owns everything it writes:
+
+|                            | VsWorker                                                                                        | official opencode                             |
+| -------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Config, data, state, cache | `~/.config/vsworker`, `~/.local/share/vsworker`, `~/.local/state/vsworker`, `~/.cache/vsworker` | the same paths under `opencode`               |
+| Database                   | `opencode-vsworker.db`                                                                          | `opencode.db`                                 |
+| Desktop app                | `VsWorker.app`, bundle id `com.vsworker.desktop`                                                | `OpenCode.app`, `ai.opencode.desktop`         |
+| Windows install dir        | `%LOCALAPPDATA%\Programs\vsworker-desktop`                                                      | `%LOCALAPPDATA%\Programs\@opencode-aidesktop` |
+| Updater                    | frozen                                                                                          | npm / brew / curl                             |
+
+On Windows the same separation holds, through the same two settings. `xdg-basedir` has no Windows special
+case, so the four directories become `%USERPROFILE%\.config\vsworker` and its siblings, and the app id decides
+the Electron user data directory (`%APPDATA%\com.vsworker.desktop`), the AppUserModelID that groups taskbar
+windows and Start menu pins, and the uninstall entry in the registry. The NSIS install directory and the
+updater cache come from `extraMetadata.name` instead, which is why it is set to `vsworker-desktop`: a one-click
+per-user installer names its directory after the package, not the product. Upstream sets no such name, so the
+official installer lands somewhere else entirely.
+
+The directory name is `app` in `packages/core/src/global.ts`. Project-level `.opencode/` directories and the
+`opencode.json` filename stay shared on purpose: those belong to a repository, not to an install. Authentication
+is therefore per product, and providers are logged in once inside VsWorker.
+
+The updater is frozen because every release feed upstream knows about serves opencode: an auto-update would
+replace a VsWorker build with stock opencode, and `uninstall` would run `npm uninstall -g opencode-ai` against the
+package the user separately installed. `Installation.method()` reports `unknown`, `latest()` reports the running
+version, and `upgrade()` refuses (`vsworker/src/release.ts`). Source runs and tests, which use the channel
+`local`, keep upstream behaviour. The desktop `vsworker` channel has no publish target and no Electron updater.
+
+Both apps still register the `opencode://` URL scheme, on macOS and on Windows; VsWorker does not rely on
+deep links, so whichever app the system picks is harmless. On Windows the WSL sidecar resolves an `opencode` inside a WSL
+distribution, which is a separate Linux install the user set up, not the Windows app next door.
+
+### Building the desktop app
+
+```bash
+cd packages/desktop
+export OPENCODE_CHANNEL=vsworker OPENCODE_VERSION=1.18.30-vsworker.$(date -u +%Y%m%d%H%M)
+bun run build
+npx electron-builder --mac --arm64 --publish never --config electron-builder.config.ts
+```
+
+macOS builds are ad-hoc signed, because the fork has no Developer ID; see the `identity` comment in
+`electron-builder.config.ts` for how to sign and notarize once one exists. Windows builds are unsigned, so
+SmartScreen warns on first run.
+
+A **cross build** needs two extra things, because `bun run build` and `electron-builder` are separate commands and
+the first cannot see the second's target flags. `node-pty` is a prebuilt native module with one package per
+platform, and the main bundle imports it statically, so the build has to be told which platform it is for, and
+that package has to be installed:
+
+```bash
+bun install --cwd packages/desktop --os=win32 --cpu=x64 "@lydell/node-pty-win32-x64@<version>"
+cd packages/desktop
+OPENCODE_TARGET_PLATFORM=win32 OPENCODE_TARGET_ARCH=x64 OPENCODE_CHANNEL=vsworker bun run build
+npx electron-builder --win --x64 --publish never --config electron-builder.config.ts
+```
+
+Get either wrong and the app starts by importing a module that is not in it. `out/` keeps whichever platform it
+was built for last, so rebuild before packaging for another one, and run `bun install` afterwards to drop the
+foreign-platform modules again.
+
 ## One known gap
 
 Bundled skills are registered with the legacy skill service, which is what the model, the `skill` tool, slash

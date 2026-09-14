@@ -33,8 +33,14 @@ upstream will never touch:
 
 Rebrand edits are a separate, unmarked category: strings and identifiers that name the product or its directories
 (`packages/core/src/plugin/skill.ts`, `packages/core/src/plugin/skill/customize-opencode.md`,
-`packages/opencode/src/skill/index.ts`, and `packages/tui/src/feature-plugins/home/tips-view.tsx`). They are not
-seams because losing one in a merge is visible in the product rather than silent.
+`packages/opencode/src/skill/index.ts`, `packages/tui/src/feature-plugins/home/tips-view.tsx`, and the desktop
+channel files under `packages/desktop/`). They are not seams because losing one in a merge is visible in the
+product rather than silent. The desktop `vsworker` channel is the largest of them:
+`scripts/utils.ts`, `scripts/copy-icons.ts`, `scripts/copy-metainfo.ts`, `electron-builder.config.ts`,
+`electron.vite.config.ts`, `src/main/{constants,index,migrate,logging}.ts`, plus `packages/app/vite.js`, whose
+own channel resolver decides the renderer's release-versus-development affordances. `electron.vite.config.ts`
+also gained `OPENCODE_TARGET_PLATFORM` / `OPENCODE_TARGET_ARCH`, so a cross build picks the right prebuilt
+`node-pty` package instead of the build machine's.
 
 The two `package.json` seams are the only ones that are not marked, because JSON has no comments.
 `bundle check --seams` covers the seven that are. `.prettierignore` also gains a `vsworker/skills/` line, which is

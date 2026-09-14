@@ -5,11 +5,13 @@ import { join } from "node:path"
 
 const CLI_VERSION = "0.0.0-next-16350"
 
-export type Channel = "dev" | "beta" | "prod"
+// "vsworker" is this fork's own release channel: its own app name, bundle id and data directory, and no update
+// feed. The three upstream channels are left exactly as they are.
+export type Channel = "dev" | "beta" | "prod" | "vsworker"
 
 export function resolveChannel(): Channel {
   const raw = Bun.env.OPENCODE_CHANNEL
-  if (raw === "dev" || raw === "beta" || raw === "prod") return raw
+  if (raw === "dev" || raw === "beta" || raw === "prod" || raw === "vsworker") return raw
   return "dev"
 }
 

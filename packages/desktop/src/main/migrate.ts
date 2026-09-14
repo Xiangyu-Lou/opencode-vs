@@ -26,6 +26,8 @@ const TAURI_APP_IDS: Record<string, string> = {
   dev: "ai.opencode.desktop.dev",
   beta: "ai.opencode.desktop.beta",
   prod: "ai.opencode.desktop",
+  // No Tauri build ever used this id, so the migration finds nothing and stops. Listed so the lookup is total.
+  vsworker: "com.vsworker.desktop",
 }
 function tauriAppId() {
   return app.isPackaged ? TAURI_APP_IDS[CHANNEL] : "ai.opencode.desktop.dev"
