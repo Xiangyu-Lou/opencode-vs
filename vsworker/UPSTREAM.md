@@ -1,7 +1,7 @@
 # Staying mergeable with upstream OpenCode
 
-VsWorker is a fork of `anomalyco/opencode`. Everything the fork adds lives in `vsworker/`, except for eleven
-small edits inside upstream files. Nine of them carry a `// vsworker-seam` comment so a merge that drops one
+VsWorker is a fork of `anomalyco/opencode`. Everything the fork adds lives in `vsworker/`, except for twelve
+small edits inside upstream files. Ten of them carry a `// vsworker-seam` comment so a merge that drops one
 can be detected mechanically.
 
 ## Seam inventory
@@ -17,6 +17,7 @@ can be detected mechanically.
 | `packages/opencode/src/skill/index.ts`        | yields `VsWorkerSkills.Service`, materializes the bundled skills and seeds them before disk discovery, adds `VsWorkerSkills.node` to `deps`          |
 | `packages/opencode/src/index.ts`              | registers the `vsworker` CLI command                                                                                                                 |
 | `packages/opencode/test/preload.ts`           | sets the three `VSWORKER_DISABLE_BUNDLED_*` variables so upstream suites see the stock sets; writes the cache marker under the renamed app dir       |
+| `packages/opencode/src/installation/index.ts` | yields `VsWorkerRelease.Service` and freezes `method`/`latest`/`upgrade` for a built release, adds `VsWorkerRelease.node` to `deps`                  |
 | `packages/core/src/global.ts`                 | `app` is `vsworker`, so the fork owns its XDG directories instead of sharing opencode's                                                              |
 | `packages/opencode/test/cli/mcp-add.test.ts`  | asserts the global config path under the renamed app dir                                                                                             |
 

@@ -724,6 +724,7 @@ const SEAMS: { file: string; marker: string }[] = [
   { file: "packages/core/src/v1/config/config.ts", marker: "vsworker-seam" },
   { file: "packages/opencode/src/index.ts", marker: "vsworker-seam" },
   { file: "packages/opencode/test/preload.ts", marker: "vsworker-seam" },
+  { file: "packages/opencode/src/installation/index.ts", marker: "vsworker-seam" },
   { file: "packages/core/src/global.ts", marker: "vsworker-seam" },
   { file: "packages/opencode/test/cli/mcp-add.test.ts", marker: "vsworker-seam" },
 ]

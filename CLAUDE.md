@@ -124,7 +124,7 @@ tmux new-session -d -s opencode-dev-desktop "$HOME/.opencode-dev/bin/opencode-de
 
 **Rules that apply to every surface**:
 
-- `OPENCODE_DISABLE_AUTOUPDATE=1` is required (the launcher sets it). The TUI worker calls `upgrade()` on start (`packages/opencode/src/cli/tui/worker.ts`), which detects the install method with `npm list -g` and would find the daily package; a `local` build currently aborts only because `semver.major("local")` throws. Do not rely on that.
+- `OPENCODE_DISABLE_AUTOUPDATE=1` is required for source runs (the launcher sets it). The TUI worker calls `upgrade()` on start (`packages/opencode/src/cli/tui/worker.ts`), which detects the install method with `npm list -g` and would find the daily package; a `local` build currently aborts only because `semver.major("local")` throws. Do not rely on that. A **built** VsWorker release needs no flag: `Installation.method()` returns `unknown`, `latest()` returns the running version and `upgrade()` refuses, because upstream's feeds all serve opencode (`vsworker/src/release.ts`, seam in `packages/opencode/src/installation/index.ts`).
 - `bun dev serve` defaults to a random port; pass `--port` only when a fixed one is needed and avoid one the daily install may be serving on.
 - The dev data dir starts with no `auth.json`. Authenticate providers again inside the dev build. Never read, copy, or reuse the daily `auth.json` or `opencode.json` on the user's behalf.
 - Narrower overrides exist when full isolation is not wanted: `OPENCODE_CONFIG_DIR` replaces only the config dir, `OPENCODE_DB` (absolute path or `:memory:`) replaces only the database. Neither isolates `auth.json`, state locks, logs, or cache.
@@ -192,7 +192,7 @@ This fork ships a curated set of plugins, MCP server definitions, and skills com
 manifest is `vsworker/bundle.jsonc`; `bun run --cwd vsworker bundle generate` regenerates `vsworker/src/*.gen.ts`,
 `vsworker/bundle.schema.json`, and the `dependencies` block of `vsworker/package.json`, then runs `bun install`.
 Commit all of those, plus anything under `vsworker/skills/`, with `bun.lock`. `bundle check` is the CI drift gate
-and `bundle check --seams` verifies the nine marked edits in upstream files survived the last merge (eleven files
+and `bundle check --seams` verifies the ten marked edits in upstream files survived the last merge (twelve files
 are touched; the two `package.json` ones cannot carry a comment).
 
 Skills are vendored under `vsworker/skills/<id>/` and written to `~/.cache/vsworker/vsworker/skills/` at runtime,

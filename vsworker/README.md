@@ -4,7 +4,7 @@ VsWorker ships a curated set of plugins, MCP server definitions, and skills insi
 into the CLI binary and the desktop server bundle at build time, so an end user never needs npm, GitHub, or any
 network access for them to work. Updating any of them means shipping a new VsWorker release.
 
-Everything in this directory is fork-owned. Upstream OpenCode files are touched in exactly eleven places, nine of
+Everything in this directory is fork-owned. Upstream OpenCode files are touched in exactly twelve places, ten of
 them marked `// vsworker-seam` and all of them listed in [UPSTREAM.md](./UPSTREAM.md).
 
 ## The manifest

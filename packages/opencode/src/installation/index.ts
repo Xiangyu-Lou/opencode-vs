@@ -14,6 +14,7 @@ import semver from "semver"
 import { InstallationChannel, InstallationVersion } from "@opencode-ai/core/installation/version"
 import { NpmConfig } from "@opencode-ai/core/npm-config"
 import { InstallationEvent } from "@opencode-ai/schema/installation-event"
+import { VsWorkerRelease } from "@vsworker/bundle/release" // vsworker-seam
 
 export type Method = "curl" | "npm" | "yarn" | "pnpm" | "bun" | "brew" | "scoop" | "choco" | "unknown"
 
@@ -83,249 +84,266 @@ export class Service extends Context.Service<Service, Interface>()("@opencode/In
 
 export const use = serviceUse(Service)
 
-const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProcess.Service> = Layer.effect(
-  Service,
-  Effect.gen(function* () {
-    const http = yield* HttpClient.HttpClient
-    const httpOk = HttpClient.filterStatusOk(withTransientReadRetry(http))
-    const appProcess = yield* AppProcess.Service
+const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProcess.Service | VsWorkerRelease.Service> =
+  Layer.effect(
+    Service,
+    Effect.gen(function* () {
+      const http = yield* HttpClient.HttpClient
+      const httpOk = HttpClient.filterStatusOk(withTransientReadRetry(http))
+      const appProcess = yield* AppProcess.Service
+      const release = yield* VsWorkerRelease.Service // vsworker-seam
 
-    const text = Effect.fnUntraced(
-      function* (cmd: string[], opts?: { cwd?: string; env?: Record<string, string> }) {
-        const result = yield* appProcess.run(
-          ChildProcess.make(cmd[0], cmd.slice(1), {
-            cwd: opts?.cwd,
-            env: opts?.env,
-            extendEnv: true,
-          }),
-        )
-        return result.stdout.toString("utf8")
-      },
-      Effect.catch(() => Effect.succeed("")),
-    )
+      const text = Effect.fnUntraced(
+        function* (cmd: string[], opts?: { cwd?: string; env?: Record<string, string> }) {
+          const result = yield* appProcess.run(
+            ChildProcess.make(cmd[0], cmd.slice(1), {
+              cwd: opts?.cwd,
+              env: opts?.env,
+              extendEnv: true,
+            }),
+          )
+          return result.stdout.toString("utf8")
+        },
+        Effect.catch(() => Effect.succeed("")),
+      )
 
-    const run = Effect.fnUntraced(
-      function* (cmd: string[], opts?: { cwd?: string; env?: Record<string, string> }) {
-        const result = yield* appProcess.run(
-          ChildProcess.make(cmd[0], cmd.slice(1), {
-            cwd: opts?.cwd,
-            env: opts?.env,
-            extendEnv: true,
-          }),
-        )
-        return {
-          code: result.exitCode,
-          stdout: result.stdout.toString("utf8"),
-          stderr: result.stderr.toString("utf8"),
-        }
-      },
-      Effect.catch((err) => Effect.succeed({ code: 1, stdout: "", stderr: errorMessage(err) })),
-    )
-
-    const getBrewFormula = Effect.fnUntraced(function* () {
-      const tapFormula = yield* text(["brew", "list", "--formula", "anomalyco/tap/opencode"])
-      if (tapFormula.includes("opencode")) return "anomalyco/tap/opencode"
-      const coreFormula = yield* text(["brew", "list", "--formula", "opencode"])
-      if (coreFormula.includes("opencode")) return "opencode"
-      return "opencode"
-    })
-
-    const upgradeFailure = (method: Method, result?: { code: number; stdout: string; stderr: string }) => {
-      if (method === "choco") return "not running from an elevated command shell"
-      if (result) return `Upgrade failed for ${method} (exit code ${result.code}).`
-      return `Upgrade failed for ${method}.`
-    }
-
-    const upgradeScriptShell = Effect.fnUntraced(function* () {
-      const bashVersion = yield* text(["bash", "--version"])
-      if (bashVersion) return "bash"
-      return "sh"
-    })
-
-    const upgradeCurl = Effect.fnUntraced(
-      function* (target: string) {
-        const response = yield* httpOk.execute(HttpClientRequest.get("https://opencode.ai/install"))
-        const body = yield* response.text
-        const bodyBytes = new TextEncoder().encode(body)
-        const shell = yield* upgradeScriptShell()
-        const result = yield* appProcess.run(
-          ChildProcess.make(shell, [], {
-            stdin: Stream.make(bodyBytes),
-            env: { VERSION: target },
-            extendEnv: true,
-          }),
-        )
-        return {
-          code: result.exitCode,
-          stdout: result.stdout.toString("utf8"),
-          stderr: result.stderr.toString("utf8"),
-        }
-      },
-      Effect.mapError(() => new UpgradeFailedError({ stderr: upgradeFailure("curl") })),
-    )
-
-    const result: Interface = {
-      info: Effect.fn("Installation.info")(function* () {
-        return {
-          version: InstallationVersion,
-          latest: yield* result.latest(),
-        }
-      }),
-      method: Effect.fn("Installation.method")(function* () {
-        if (process.execPath.includes(path.join(".opencode", "bin"))) return "curl" as Method
-        if (process.execPath.includes(path.join(".local", "bin"))) return "curl" as Method
-        const exec = process.execPath.toLowerCase()
-
-        const checks: Array<{ name: Method; command: () => Effect.Effect<string> }> = [
-          { name: "npm", command: () => text(["npm", "list", "-g", "--depth=0"]) },
-          { name: "yarn", command: () => text(["yarn", "global", "list"]) },
-          { name: "pnpm", command: () => text(["pnpm", "list", "-g", "--depth=0"]) },
-          { name: "bun", command: () => text(["bun", "pm", "ls", "-g"]) },
-          { name: "brew", command: () => text(["brew", "list", "--formula", "opencode"]) },
-          { name: "scoop", command: () => text(["scoop", "list", "opencode"]) },
-          { name: "choco", command: () => text(["choco", "list", "--limit-output", "opencode"]) },
-        ]
-
-        checks.sort((a, b) => {
-          const aMatches = exec.includes(a.name)
-          const bMatches = exec.includes(b.name)
-          if (aMatches && !bMatches) return -1
-          if (!aMatches && bMatches) return 1
-          return 0
-        })
-
-        for (const check of checks) {
-          const output = yield* check.command()
-          const installedName =
-            check.name === "brew" || check.name === "choco" || check.name === "scoop" ? "opencode" : "opencode-ai"
-          if (output.includes(installedName)) {
-            return check.name
+      const run = Effect.fnUntraced(
+        function* (cmd: string[], opts?: { cwd?: string; env?: Record<string, string> }) {
+          const result = yield* appProcess.run(
+            ChildProcess.make(cmd[0], cmd.slice(1), {
+              cwd: opts?.cwd,
+              env: opts?.env,
+              extendEnv: true,
+            }),
+          )
+          return {
+            code: result.exitCode,
+            stdout: result.stdout.toString("utf8"),
+            stderr: result.stderr.toString("utf8"),
           }
-        }
+        },
+        Effect.catch((err) => Effect.succeed({ code: 1, stdout: "", stderr: errorMessage(err) })),
+      )
 
-        return "unknown" as Method
-      }),
-      latest: Effect.fn("Installation.latest")(function* (installMethod?: Method) {
-        const detectedMethod = installMethod || (yield* result.method())
+      const getBrewFormula = Effect.fnUntraced(function* () {
+        const tapFormula = yield* text(["brew", "list", "--formula", "anomalyco/tap/opencode"])
+        if (tapFormula.includes("opencode")) return "anomalyco/tap/opencode"
+        const coreFormula = yield* text(["brew", "list", "--formula", "opencode"])
+        if (coreFormula.includes("opencode")) return "opencode"
+        return "opencode"
+      })
 
-        if (detectedMethod === "brew") {
-          const formula = yield* getBrewFormula()
-          if (formula.includes("/")) {
-            const infoJson = yield* text(["brew", "info", "--json=v2", formula])
-            const info = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(BrewInfoV2))(infoJson)
-            return info.formulae[0].versions.stable
+      const upgradeFailure = (method: Method, result?: { code: number; stdout: string; stderr: string }) => {
+        if (method === "choco") return "not running from an elevated command shell"
+        if (result) return `Upgrade failed for ${method} (exit code ${result.code}).`
+        return `Upgrade failed for ${method}.`
+      }
+
+      const upgradeScriptShell = Effect.fnUntraced(function* () {
+        const bashVersion = yield* text(["bash", "--version"])
+        if (bashVersion) return "bash"
+        return "sh"
+      })
+
+      const upgradeCurl = Effect.fnUntraced(
+        function* (target: string) {
+          const response = yield* httpOk.execute(HttpClientRequest.get("https://opencode.ai/install"))
+          const body = yield* response.text
+          const bodyBytes = new TextEncoder().encode(body)
+          const shell = yield* upgradeScriptShell()
+          const result = yield* appProcess.run(
+            ChildProcess.make(shell, [], {
+              stdin: Stream.make(bodyBytes),
+              env: { VERSION: target },
+              extendEnv: true,
+            }),
+          )
+          return {
+            code: result.exitCode,
+            stdout: result.stdout.toString("utf8"),
+            stderr: result.stderr.toString("utf8"),
           }
+        },
+        Effect.mapError(() => new UpgradeFailedError({ stderr: upgradeFailure("curl") })),
+      )
+
+      const result: Interface = {
+        info: Effect.fn("Installation.info")(function* () {
+          return {
+            version: InstallationVersion,
+            latest: yield* result.latest(),
+          }
+        }),
+        method: Effect.fn("Installation.method")(function* () {
+          // vsworker-seam: a VsWorker build is installed by hand, so it has no package manager to report. Answering
+          // "unknown" here stops every caller before it probes: no `npm list -g`, and no path that could run
+          // `npm install -g opencode-ai` or `npm uninstall -g opencode-ai` against the official package.
+          if (release.active) return "unknown" as Method
+          if (process.execPath.includes(path.join(".opencode", "bin"))) return "curl" as Method
+          if (process.execPath.includes(path.join(".local", "bin"))) return "curl" as Method
+          const exec = process.execPath.toLowerCase()
+
+          const checks: Array<{ name: Method; command: () => Effect.Effect<string> }> = [
+            { name: "npm", command: () => text(["npm", "list", "-g", "--depth=0"]) },
+            { name: "yarn", command: () => text(["yarn", "global", "list"]) },
+            { name: "pnpm", command: () => text(["pnpm", "list", "-g", "--depth=0"]) },
+            { name: "bun", command: () => text(["bun", "pm", "ls", "-g"]) },
+            { name: "brew", command: () => text(["brew", "list", "--formula", "opencode"]) },
+            { name: "scoop", command: () => text(["scoop", "list", "opencode"]) },
+            { name: "choco", command: () => text(["choco", "list", "--limit-output", "opencode"]) },
+          ]
+
+          checks.sort((a, b) => {
+            const aMatches = exec.includes(a.name)
+            const bMatches = exec.includes(b.name)
+            if (aMatches && !bMatches) return -1
+            if (!aMatches && bMatches) return 1
+            return 0
+          })
+
+          for (const check of checks) {
+            const output = yield* check.command()
+            const installedName =
+              check.name === "brew" || check.name === "choco" || check.name === "scoop" ? "opencode" : "opencode-ai"
+            if (output.includes(installedName)) {
+              return check.name
+            }
+          }
+
+          return "unknown" as Method
+        }),
+        latest: Effect.fn("Installation.latest")(function* (installMethod?: Method) {
+          // vsworker-seam: every release feed upstream knows about serves opencode, not VsWorker. Reporting the
+          // running version as the latest one makes the update check a silent no-op with no network call.
+          if (release.active) return InstallationVersion
+          const detectedMethod = installMethod || (yield* result.method())
+
+          if (detectedMethod === "brew") {
+            const formula = yield* getBrewFormula()
+            if (formula.includes("/")) {
+              const infoJson = yield* text(["brew", "info", "--json=v2", formula])
+              const info = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(BrewInfoV2))(infoJson)
+              return info.formulae[0].versions.stable
+            }
+            const response = yield* httpOk.execute(
+              HttpClientRequest.get("https://formulae.brew.sh/api/formula/opencode.json").pipe(
+                HttpClientRequest.acceptJson,
+              ),
+            )
+            const data = yield* HttpClientResponse.schemaBodyJson(BrewFormula)(response)
+            return data.versions.stable
+          }
+
+          if (detectedMethod === "npm" || detectedMethod === "bun" || detectedMethod === "pnpm") {
+            const response = yield* httpOk.execute(
+              HttpClientRequest.get(
+                `${yield* NpmConfig.registry(process.cwd())}/opencode-ai/${InstallationChannel}`,
+              ).pipe(HttpClientRequest.acceptJson),
+            )
+            const data = yield* HttpClientResponse.schemaBodyJson(NpmPackage)(response)
+            return data.version
+          }
+
+          if (detectedMethod === "choco") {
+            const response = yield* httpOk.execute(
+              HttpClientRequest.get(
+                "https://community.chocolatey.org/api/v2/Packages?$filter=Id%20eq%20%27opencode%27%20and%20IsLatestVersion&$select=Version",
+              ).pipe(HttpClientRequest.setHeaders({ Accept: "application/json;odata=verbose" })),
+            )
+            const data = yield* HttpClientResponse.schemaBodyJson(ChocoPackage)(response)
+            return data.d.results[0].Version
+          }
+
+          if (detectedMethod === "scoop") {
+            const response = yield* httpOk.execute(
+              HttpClientRequest.get(
+                "https://raw.githubusercontent.com/ScoopInstaller/Main/master/bucket/opencode.json",
+              ).pipe(HttpClientRequest.setHeaders({ Accept: "application/json" })),
+            )
+            const data = yield* HttpClientResponse.schemaBodyJson(ScoopManifest)(response)
+            return data.version
+          }
+
           const response = yield* httpOk.execute(
-            HttpClientRequest.get("https://formulae.brew.sh/api/formula/opencode.json").pipe(
+            HttpClientRequest.get("https://api.github.com/repos/anomalyco/opencode/releases/latest").pipe(
               HttpClientRequest.acceptJson,
             ),
           )
-          const data = yield* HttpClientResponse.schemaBodyJson(BrewFormula)(response)
-          return data.versions.stable
-        }
-
-        if (detectedMethod === "npm" || detectedMethod === "bun" || detectedMethod === "pnpm") {
-          const response = yield* httpOk.execute(
-            HttpClientRequest.get(
-              `${yield* NpmConfig.registry(process.cwd())}/opencode-ai/${InstallationChannel}`,
-            ).pipe(HttpClientRequest.acceptJson),
-          )
-          const data = yield* HttpClientResponse.schemaBodyJson(NpmPackage)(response)
-          return data.version
-        }
-
-        if (detectedMethod === "choco") {
-          const response = yield* httpOk.execute(
-            HttpClientRequest.get(
-              "https://community.chocolatey.org/api/v2/Packages?$filter=Id%20eq%20%27opencode%27%20and%20IsLatestVersion&$select=Version",
-            ).pipe(HttpClientRequest.setHeaders({ Accept: "application/json;odata=verbose" })),
-          )
-          const data = yield* HttpClientResponse.schemaBodyJson(ChocoPackage)(response)
-          return data.d.results[0].Version
-        }
-
-        if (detectedMethod === "scoop") {
-          const response = yield* httpOk.execute(
-            HttpClientRequest.get(
-              "https://raw.githubusercontent.com/ScoopInstaller/Main/master/bucket/opencode.json",
-            ).pipe(HttpClientRequest.setHeaders({ Accept: "application/json" })),
-          )
-          const data = yield* HttpClientResponse.schemaBodyJson(ScoopManifest)(response)
-          return data.version
-        }
-
-        const response = yield* httpOk.execute(
-          HttpClientRequest.get("https://api.github.com/repos/anomalyco/opencode/releases/latest").pipe(
-            HttpClientRequest.acceptJson,
-          ),
-        )
-        const data = yield* HttpClientResponse.schemaBodyJson(GitHubRelease)(response)
-        return data.tag_name.replace(/^v/, "")
-      }, Effect.orDie),
-      upgrade: Effect.fn("Installation.upgrade")(function* (m: Method, target: string) {
-        let upgradeResult: { code: number; stdout: string; stderr: string } | undefined
-        switch (m) {
-          case "curl":
-            upgradeResult = yield* upgradeCurl(target)
-            break
-          case "npm":
-            upgradeResult = yield* run(["npm", "install", "-g", `opencode-ai@${target}`])
-            break
-          case "pnpm":
-            upgradeResult = yield* run(["pnpm", "install", "-g", `opencode-ai@${target}`])
-            break
-          case "bun":
-            upgradeResult = yield* run(["bun", "install", "-g", `opencode-ai@${target}`])
-            break
-          case "brew": {
-            const formula = yield* getBrewFormula()
-            const env = { HOMEBREW_NO_AUTO_UPDATE: "1" }
-            if (formula.includes("/")) {
-              const tap = yield* run(["brew", "tap", "anomalyco/tap"], { env })
-              if (tap.code !== 0) {
-                upgradeResult = tap
-                break
-              }
-              const repo = yield* text(["brew", "--repo", "anomalyco/tap"])
-              const dir = repo.trim()
-              if (dir) {
-                const pull = yield* run(["git", "pull", "--ff-only"], { cwd: dir, env })
-                if (pull.code !== 0) {
-                  upgradeResult = pull
+          const data = yield* HttpClientResponse.schemaBodyJson(GitHubRelease)(response)
+          return data.tag_name.replace(/^v/, "")
+        }, Effect.orDie),
+        upgrade: Effect.fn("Installation.upgrade")(function* (m: Method, target: string) {
+          // vsworker-seam: last line of defence. Every branch below installs opencode, so a forced method must not
+          // reach them from a VsWorker build.
+          if (release.active) return yield* new UpgradeFailedError({ stderr: VsWorkerRelease.UPGRADE_MESSAGE })
+          let upgradeResult: { code: number; stdout: string; stderr: string } | undefined
+          switch (m) {
+            case "curl":
+              upgradeResult = yield* upgradeCurl(target)
+              break
+            case "npm":
+              upgradeResult = yield* run(["npm", "install", "-g", `opencode-ai@${target}`])
+              break
+            case "pnpm":
+              upgradeResult = yield* run(["pnpm", "install", "-g", `opencode-ai@${target}`])
+              break
+            case "bun":
+              upgradeResult = yield* run(["bun", "install", "-g", `opencode-ai@${target}`])
+              break
+            case "brew": {
+              const formula = yield* getBrewFormula()
+              const env = { HOMEBREW_NO_AUTO_UPDATE: "1" }
+              if (formula.includes("/")) {
+                const tap = yield* run(["brew", "tap", "anomalyco/tap"], { env })
+                if (tap.code !== 0) {
+                  upgradeResult = tap
                   break
                 }
+                const repo = yield* text(["brew", "--repo", "anomalyco/tap"])
+                const dir = repo.trim()
+                if (dir) {
+                  const pull = yield* run(["git", "pull", "--ff-only"], { cwd: dir, env })
+                  if (pull.code !== 0) {
+                    upgradeResult = pull
+                    break
+                  }
+                }
               }
+              upgradeResult = yield* run(["brew", "upgrade", formula], { env })
+              break
             }
-            upgradeResult = yield* run(["brew", "upgrade", formula], { env })
-            break
+            case "choco":
+              upgradeResult = yield* run(["choco", "upgrade", "opencode", `--version=${target}`, "-y"])
+              break
+            case "scoop":
+              upgradeResult = yield* run(["scoop", "install", `opencode@${target}`])
+              break
+            default:
+              return yield* new UpgradeFailedError({ stderr: `Unknown installation method: ${m}` })
           }
-          case "choco":
-            upgradeResult = yield* run(["choco", "upgrade", "opencode", `--version=${target}`, "-y"])
-            break
-          case "scoop":
-            upgradeResult = yield* run(["scoop", "install", `opencode@${target}`])
-            break
-          default:
-            return yield* new UpgradeFailedError({ stderr: `Unknown installation method: ${m}` })
-        }
-        if (!upgradeResult || upgradeResult.code !== 0) {
-          return yield* new UpgradeFailedError({ stderr: upgradeFailure(m, upgradeResult) })
-        }
-        yield* Effect.logInfo("upgraded", {
-          method: m,
-          target,
-          stdout: upgradeResult.stdout,
-          stderr: upgradeResult.stderr,
-        })
-        yield* text([process.execPath, "--version"])
-      }),
-    }
+          if (!upgradeResult || upgradeResult.code !== 0) {
+            return yield* new UpgradeFailedError({ stderr: upgradeFailure(m, upgradeResult) })
+          }
+          yield* Effect.logInfo("upgraded", {
+            method: m,
+            target,
+            stdout: upgradeResult.stdout,
+            stderr: upgradeResult.stderr,
+          })
+          yield* text([process.execPath, "--version"])
+        }),
+      }
 
-    return Service.of(result)
-  }),
-)
+      return Service.of(result)
+    }),
+  )
 
-export const node = LayerNode.make({ service: Service, layer: layer, deps: [httpClient, AppProcess.node] })
+export const node = LayerNode.make({
+  service: Service,
+  layer: layer,
+  // vsworker-seam: VsWorkerRelease.node
+  deps: [httpClient, AppProcess.node, VsWorkerRelease.node],
+})
 
 const { runPromise } = makeRuntime(Service, AppNodeBuilder.build(node))
 
