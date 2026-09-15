@@ -37,6 +37,7 @@ import { ConfigV2Compat } from "./v2-compat"
 import { Npm } from "@opencode-ai/core/npm"
 import { withTransientReadRetry } from "@/util/effect-http-client"
 import { VsWorkerMcp } from "@vsworker/bundle/mcp" // vsworker-seam
+import { VsWorkerProviders } from "@vsworker/bundle/providers" // vsworker-seam
 
 // Custom merge function that concatenates array fields instead of replacing them
 // Keep remeda's deep conditional merge type out of hot config-loading paths; TS profiling showed it dominates here.
@@ -572,6 +573,12 @@ const layer = Layer.effect(
         for (const warning of bundledMcp.warnings) {
           yield* Effect.logWarning("failed to substitute a bundled mcp definition", { warning })
         }
+
+        // vsworker-seam: upstream's hosted providers (OpenCode Zen, OpenCode Go) are not part of this product.
+        // Naming them here, after every config source has merged, is what removes them from the provider
+        // HttpApi's catalog, so the web UI, the desktop app, the TUI, and `opencode providers` all stop
+        // offering them from one rule.
+        result.disabled_providers = VsWorkerProviders.apply({ user: result.disabled_providers })
 
         for (const [name, mode] of Object.entries(result.mode ?? {})) {
           result.agent = mergeDeep(result.agent ?? {}, {

@@ -183,7 +183,7 @@ function ProviderPicker(props: {
         return [{ id: CUSTOM_ID, name: customLabel() }, ...providers.all().values()]
       }}
       filterKeys={["id", "name"]}
-      groupBy={(x) => (popularProviders.includes(x.id) ? popularGroup() : otherGroup())}
+      groupBy={(x) => (x.id === CUSTOM_ID || popularProviders.includes(x.id) ? popularGroup() : otherGroup())} // vsworker-seam
       sortBy={(a, b) => {
         if (a.id === CUSTOM_ID) return -1
         if (b.id === CUSTOM_ID) return 1
@@ -237,7 +237,10 @@ function ProviderPickerV2(props: {
     active: undefined as string | undefined,
     connecting: undefined as string | undefined,
   })
-  const featured = ["opencode", "opencode-go", "anthropic", "openai", "google", "openrouter", "vercel"]
+  // vsworker-seam: the custom OpenAI-compatible provider is how a VsWorker user connects, so it leads the
+  // list. The two opencode ids stay in place to keep the diff from upstream to one token; the server
+  // already drops them from the catalog.
+  const featured = [CUSTOM_ID, "opencode", "opencode-go", "anthropic", "openai", "google", "openrouter", "vercel"]
   const custom = () => ({ id: CUSTOM_ID, name: language.t("dialog.provider.custom.label") })
   const all = createMemo(() => {
     language.locale()

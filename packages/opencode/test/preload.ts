@@ -38,11 +38,12 @@ process.env["XDG_STATE_HOME"] = path.join(dir, "state")
 process.env["OPENCODE_MODELS_PATH"] = path.join(import.meta.dir, "tool", "fixtures", "models-api.json")
 process.env["OPENCODE_EXPERIMENTAL_EVENT_SYSTEM"] = "true"
 process.env["OPENCODE_EXPERIMENTAL_WORKSPACES"] = "true"
-// vsworker-seam: upstream suites assert exact hook, tool, mcp, and skill sets, so everything this fork bundles
-// stays out of them. Tests that exercise bundling clear these variables themselves.
+// vsworker-seam: upstream suites assert exact hook, tool, mcp, skill, and provider sets, so everything this fork
+// bundles or hides stays out of them. Tests that exercise bundling clear these variables themselves.
 process.env["VSWORKER_DISABLE_BUNDLED_PLUGINS"] = "1"
 process.env["VSWORKER_DISABLE_BUNDLED_MCP"] = "1"
 process.env["VSWORKER_DISABLE_BUNDLED_SKILLS"] = "1"
+process.env["VSWORKER_DISABLE_HIDDEN_PROVIDERS"] = "1"
 
 // Set test home directory to isolate tests from user's actual home directory
 // This prevents tests from picking up real user configs/skills from ~/.claude/skills

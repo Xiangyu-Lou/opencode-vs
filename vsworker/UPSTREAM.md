@@ -3,7 +3,7 @@
 VsWorker is a fork of `anomalyco/opencode`. Everything the fork adds for bundling plugins, MCP servers, and
 skills lives in `vsworker/`, and everything it adds for managing them from the desktop client lives in
 `packages/opencode/src/vsworker/` and `packages/app/src/vsworker/`. Outside those directories the fork makes
-twenty small edits inside upstream files. Eighteen of them carry a `// vsworker-seam` comment so a merge that
+twenty-one small edits inside upstream files. Nineteen of them carry a `// vsworker-seam` comment so a merge that
 drops one can be detected mechanically.
 
 ## Seam inventory
@@ -35,6 +35,7 @@ drops one can be detected mechanically.
 | `packages/opencode/test/server/httpapi-exercise/index.ts`        | spreads `vsworkerScenarios` into the route-coverage list                           |
 | `packages/app/src/components/settings-v2/dialog-settings-v2.tsx` | one `<VsWorkerSettingsNav />` and one `<VsWorkerSettingsPanels />`                 |
 | `packages/app/src/context/language.tsx`                          | merges the fork's i18n domain into the base dictionary and into each locale loader |
+| `packages/app/src/components/dialog-connect-provider.tsx`        | the custom provider leads both provider pickers                                    |
 
 Fork-owned files behind those five seams:
 
@@ -65,7 +66,7 @@ also gained `OPENCODE_TARGET_PLATFORM` / `OPENCODE_TARGET_ARCH`, so a cross buil
 `node-pty` package instead of the build machine's.
 
 The two `package.json` seams are the only ones that are not marked, because JSON has no comments.
-`bundle check --seams` covers the eighteen that are. `.prettierignore` also gains a `vsworker/skills/` line, which is
+`bundle check --seams` covers the nineteen that are. `.prettierignore` also gains a `vsworker/skills/` line, which is
 not a seam: losing it only means the formatter rewrites vendored skill files, which `bundle check` then reports as
 drift.
 

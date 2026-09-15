@@ -192,8 +192,8 @@ This fork ships a curated set of plugins, MCP server definitions, and skills com
 manifest is `vsworker/bundle.jsonc`; `bun run --cwd vsworker bundle generate` regenerates `vsworker/src/*.gen.ts`,
 `vsworker/bundle.schema.json`, and the `dependencies` block of `vsworker/package.json`, then runs `bun install`.
 Commit all of those, plus anything under `vsworker/skills/`, with `bun.lock`. `bundle check` is the CI drift gate
-and `bundle check --seams` verifies the eighteen marked edits in upstream files survived the last merge (twenty
-files are touched; the two `package.json` ones cannot carry a comment).
+and `bundle check --seams` verifies the nineteen marked edits in upstream files survived the last merge
+(twenty-one files are touched; the two `package.json` ones cannot carry a comment).
 
 Skills are vendored under `vsworker/skills/<id>/` and written to `~/.cache/vsworker/vsworker/skills/` at runtime,
 because the skill tool needs a real directory. A skill directory may carry a flat `env.json`; its pairs are
@@ -211,5 +211,7 @@ should live.
 Read `vsworker/README.md` before adding anything (the manifest reference, the `bundle import` helpers, and the
 constraints compiled-in content has to satisfy), `vsworker/PACKAGING.md` before building or shipping a desktop
 client, and `vsworker/UPSTREAM.md` before merging upstream (the seam inventory and the merge runbook).
-Upstream suites keep the stock sets because `packages/opencode/test/preload.ts` sets `VSWORKER_DISABLE_BUNDLED_PLUGINS`, `_MCP`, and `_SKILLS`; tests under `packages/opencode/test/vsworker/`
-clear them themselves.
+Upstream suites keep the stock sets because `packages/opencode/test/preload.ts`
+sets `VSWORKER_DISABLE_BUNDLED_PLUGINS`, `_MCP`, and `_SKILLS`, plus `VSWORKER_DISABLE_HIDDEN_PROVIDERS`, which
+keeps upstream's hosted providers in the catalog; tests under `packages/opencode/test/vsworker/` clear them
+themselves.
