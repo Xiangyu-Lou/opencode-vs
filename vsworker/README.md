@@ -7,6 +7,10 @@ network access for them to work. Updating any of them means shipping a new VsWor
 Everything in this directory is fork-owned. Upstream OpenCode files are touched in exactly twenty places,
 eighteen of them marked `// vsworker-seam` and all of them listed in [UPSTREAM.md](./UPSTREAM.md).
 
+This file is the field reference: what the manifest accepts, and how a user turns an entry off. Building the
+macOS and Windows desktop clients is [PACKAGING.md](./PACKAGING.md); merging upstream is
+[UPSTREAM.md](./UPSTREAM.md).
+
 ## The manifest
 
 `bundle.jsonc` is the single place that decides what gets bundled. After editing it, run:
@@ -263,32 +267,11 @@ distribution, which is a separate Linux install the user set up, not the Windows
 
 ### Building the desktop app
 
-```bash
-cd packages/desktop
-export OPENCODE_CHANNEL=vsworker OPENCODE_VERSION=1.18.30-vsworker.$(date -u +%Y%m%d%H%M)
-bun run build
-npx electron-builder --mac --arm64 --publish never --config electron-builder.config.ts
-```
-
-macOS builds are ad-hoc signed, because the fork has no Developer ID; see the `identity` comment in
-`electron-builder.config.ts` for how to sign and notarize once one exists. Windows builds are unsigned, so
-SmartScreen warns on first run.
-
-A **cross build** needs two extra things, because `bun run build` and `electron-builder` are separate commands and
-the first cannot see the second's target flags. `node-pty` is a prebuilt native module with one package per
-platform, and the main bundle imports it statically, so the build has to be told which platform it is for, and
-that package has to be installed:
-
-```bash
-bun install --cwd packages/desktop --os=win32 --cpu=x64 "@lydell/node-pty-win32-x64@<version>"
-cd packages/desktop
-OPENCODE_TARGET_PLATFORM=win32 OPENCODE_TARGET_ARCH=x64 OPENCODE_CHANNEL=vsworker bun run build
-npx electron-builder --win --x64 --publish never --config electron-builder.config.ts
-```
-
-Get either wrong and the app starts by importing a module that is not in it. `out/` keeps whichever platform it
-was built for last, so rebuild before packaging for another one, and run `bun install` afterwards to drop the
-foreign-platform modules again.
+[PACKAGING.md](./PACKAGING.md) is the build runbook: prerequisites, the macOS and Windows commands, what each
+environment variable decides, the artifact list, how to verify a build actually carries the bundle, and
+troubleshooting. The short version is that every surface keys off `OPENCODE_CHANNEL=vsworker`, macOS builds are
+ad-hoc signed because the fork has no Developer ID, and Windows builds are unsigned, so SmartScreen warns on
+first run.
 
 ## Managing all of this from the desktop client
 
