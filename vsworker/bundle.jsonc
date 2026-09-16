@@ -14,15 +14,20 @@
   // Each entry's "config" is an mcp.<id> value exactly as it would appear in opencode.json. Keep secrets out:
   // use {env:VAR} or {file:path}, both substituted at runtime against the user's global config directory.
   "mcp": [],
-  // Skills are vendored under vsworker/skills/<id>/. Add one with: bundle import skill <name>
+  // Skills are vendored under vsworker/skills/, as a directory <id>/ or a zip <id>.zip holding one. The entry
+  // is the same either way. Add one with: bundle import skill <name> [--from <dir|file.zip>]
   "skills": [
     {
       "id": "hello",
       "description": "Template and smoke test for skill bundling.",
     },
     {
-      "id": "well-intervention-recommendation",
-      "description": "井下作业措施推荐：问答对 → 图谱 两级检索。平台地址与阈值放在该 skill 的 env.json 里。",
+      "id": "drilling-intervention-recommendation",
+      "description": "钻井事故与复杂情况处置措施推荐：历史处置记录（问答对）→《钻井事故与复杂问题》（图谱）两级检索。平台地址与阈值放在该 skill 的 env.json 里。",
+    },
+    {
+      "id": "workover-completion-recommendation",
+      "description": "试修 / 完井 / 试油事故处置措施推荐：只查历史处置记录（问答对），没有教材兜底。平台地址与阈值放在该 skill 的 env.json 里。",
     },
   ],
 }
