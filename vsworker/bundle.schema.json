@@ -231,7 +231,7 @@
               },
               "path": {
                 "type": "string",
-                "description": "Skill directory relative to vsworker/. Defaults to skills/<id>"
+                "description": "Skill source relative to vsworker/: a directory, or a .zip archive holding one. Defaults to skills/<id>, or skills/<id>.zip when that is what exists"
               },
               "enabled": {
                 "type": "boolean",

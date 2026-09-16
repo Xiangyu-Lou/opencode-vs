@@ -75,26 +75,41 @@ VsWorker.app / vsworker-desktop-win-x64.exe
 
 ### 2.1 Skill
 
-Skill 是**目录**，vendored 在 `vsworker/skills/<id>/` 下。
+Skill vendored 在 `vsworker/skills/` 下，**目录 `<id>/` 或 zip 包 `<id>.zip` 都行**，manifest 里的写法完全一样。
 
 - `SKILL.md` 必需，且 frontmatter 里的 `name` 必须**等于** manifest 里的 `id`，`description` 不能为空。
 - 可选 `env.json`（平铺 JSON，运行在该 skill 目录里的 bash 命令会拿到这些环境变量，
   见 README 的 `#### env.json`）。
 - 其它文件随意：`scripts/`、`references/` 都会被一起打进去。
 
-硬约束（来自 `vsworker/script/bundle.ts` 的 `resolveSkill` / `walk`）：
+硬约束（来自 `vsworker/script/skill-source.ts`）：
 
 - **不许有符号链接** —— 报错原文是 `is a symlink. A bundled skill has to be self-contained.`
-- 自动跳过：`__pycache__/`、`.git/`、`.DS_Store`、`Thumbs.db`、`.gitkeep`、`*.pyc`、`*.pyo`
+- 自动跳过：`__pycache__/`、`.git/`、`.DS_Store`、`Thumbs.db`、`.gitkeep`、`*.pyc`、`*.pyo`、
+  `__MACOSX/`、`._*`（macOS 的 AppleDouble 附件）
 - 体积告警：单文件 > 256 KiB，或整个 skill > 1 MiB
+- 同一个 `<id>` **不能既有目录又有 zip** —— 直接报错，不做优先级猜测
+
+zip 包另外几条（来自 `readArchive`）：
+
+- 里面要么统一裹一层顶层目录（`zip -r <id>.zip <id>/`），要么 `SKILL.md` 直接在包根
+  （`cd <id> && zip -r ../<id>.zip .`）。**只有一层且唯一**的顶层目录会被剥掉，其余原样保留。
+  顶层目录名不必等于 `<id>`（认身份的是 `SKILL.md` 的 `name`），但不一致会给一条 warning。
+- 可执行位取自包里记录的 Unix mode，跟打包机器无关；Windows 打的包没有 mode，里面一律不可执行。
+- **zip 包只是构建期的源文件格式**：`bundle generate` 读它、把内容内联进 `skills.gen.ts`，
+  产物里没有 zip，用户机器上也不会解压。
+- `.gitignore` 管不到 zip 包内部，所以上面那份跳过名单是唯一的防线；`generate` 会为每个包
+  打印一条「跳过了哪些文件」的 warning。
 
 两种加法：
 
 ```bash
 # A. 从你自己的全局 skills 目录 vendor 一份进来（会自动改 bundle.jsonc 并 generate）
-bun run --cwd vsworker bundle import skill <name> [--from <dir>] [--force]
+#    <dir> 和 <file.zip> 都接受
+bun run --cwd vsworker bundle import skill <name> [--from <dir|file.zip>] [--force]
 
-# B. 手工：建好 vsworker/skills/<id>/ 目录，然后往 bundle.jsonc 的 skills 数组加一条
+# B. 手工：把 vsworker/skills/<id>/ 目录建好，或者把 <id>.zip 直接丢进 vsworker/skills/，
+#    然后往 bundle.jsonc 的 skills 数组加一条
 #    { "id": "<id>", "description": "为什么要打包它" }
 ```
 

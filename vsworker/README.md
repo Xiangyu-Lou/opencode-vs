@@ -86,26 +86,51 @@ Two things a bundled definition cannot do for you:
 
 ### `skills`
 
-Skills are vendored in this repository under `vsworker/skills/<id>/`, `SKILL.md` plus whatever `scripts/` or
-`references/` files it needs. Every file is inlined into the build and written to
-`~/.cache/vsworker/vsworker/skills/<id>/` the first time a build that has skills enabled starts. They need a real
-directory on disk because the `skill` tool lists sibling files and slash commands resolve relative paths.
+Skills are vendored in this repository under `vsworker/skills/`, as **either a directory `<id>/` or a `.zip`
+archive `<id>.zip`** holding one: `SKILL.md` plus whatever `scripts/` or `references/` files it needs. Every file
+is inlined into the build and written to `~/.cache/vsworker/vsworker/skills/<id>/` the first time a build that
+has skills enabled starts. They need a real directory on disk at runtime because the `skill` tool lists sibling
+files and slash commands resolve relative paths.
 
 ```jsonc
 { "id": "report-review", "description": "审核流程 the team follows for 可研报告" }
+{ "id": "drilling-intervention-recommendation", "description": "钻井事故与复杂情况处置措施推荐" } // skills/<id>.zip
 { "id": "hello", "path": "skills/hello", "defaultEnabled": false }
 ```
+
+The manifest entry is the same either way, so a skill that arrives from the 识油 platform as an archive is
+dropped in as-is. `path` may name either form. Having both `skills/<id>/` and `skills/<id>.zip` is an error
+rather than a precedence rule: the skills hash gates `bundle check`, so a machine missing one of the two would
+otherwise produce a different hash with nothing on screen to explain it.
 
 The frontmatter `name` must equal the `id`, and a `description` is required, because that is what the model picks
 skills by. `vsworker/skills/` is listed in the repo's `.prettierignore`, so a vendored skill keeps the exact bytes
 it was imported with. Editor and interpreter droppings are not bundled: `__pycache__/`, `*.pyc`, `*.pyo`,
-`.DS_Store`, `Thumbs.db` and `.git/` are skipped, because they differ per machine and would make the skills hash
-disagree between the machine that ran `generate` and CI.
+`.DS_Store`, `Thumbs.db`, `._*` AppleDouble sidecars, `__MACOSX/` and `.git/` are skipped, because they differ
+per machine and would make the skills hash disagree between the machine that ran `generate` and CI.
+
+#### Archives
+
+An archive is a **build-time source format only**. `bundle generate` reads it, inlines the files it holds, and
+`bundle check` re-reads it; nothing ships as an archive and nothing is unpacked on a user's machine.
+
+- Either wrap the files in a single top-level directory (`zip -r <id>.zip <id>/`) or put `SKILL.md` at the
+  archive root (`cd <id> && zip -r ../<id>.zip .`). A single wrapping directory is stripped; anything else is
+  left alone, so an archive with two top-level directories fails for want of a `SKILL.md`. The wrapper does not
+  have to be named `<id>` — `SKILL.md`'s `name` is what settles identity — but a mismatch is warned about.
+- The executable bit comes from the archive's own Unix mode, so it is the same on every machine. An archive
+  written on Windows carries no mode and nothing in it is executable. Nothing else about the host is read, which
+  makes an archive marginally _safer_ than a directory for hash stability: `core.autocrlf` cannot rewrite bytes
+  inside a `.zip`, and a case- or Unicode-normalizing filesystem cannot rename its entries.
+- An entry that escapes the skill (`../`), a duplicate name, a symlink entry, an encrypted entry, or a non-ASCII
+  name not flagged UTF-8 is refused at build time rather than guessed at.
+- A `.gitignore` cannot reach inside an archive, so the skip list above is the only thing keeping junk out of
+  the build. `generate` prints one warning per archive naming what it dropped.
 
 #### `env.json`
 
-A skill directory may carry an `env.json`. Its pairs become environment variables for the bash commands that run
-in that skill. The shape comes from the 识油 platform, which parses the same file when it registers a skill: a
+A skill may carry an `env.json`, in its directory or inside its archive. Its pairs become environment variables
+for the bash commands that run in that skill. The shape comes from the 识油 platform, which parses the same file when it registers a skill: a
 **flat** JSON object, no comments, no grouping, no nesting.
 
 ```jsonc
@@ -150,12 +175,13 @@ bun run --cwd vsworker bundle bump <id> [ver] # repin one plugin, then regenerat
 
 # Import from your own global opencode config, then regenerate
 bun run --cwd vsworker bundle import mcp <name> [--from <file>] [--id <id>] [--off]
-bun run --cwd vsworker bundle import skill <name> [--from <dir>] [--force]
+bun run --cwd vsworker bundle import skill <name> [--from <dir|file.zip>] [--force]
 ```
 
 `import mcp` reads `~/.config/vsworker/opencode.json` (or `--from`), accepts both the flat and the
 `mcp.servers` shapes, moves `enabled` into `defaultEnabled`, and warns about literal secrets. `import skill`
-copies the directory out of `~/.config/vsworker/skills/<name>` into `vsworker/skills/<name>`. Both append to
+copies `~/.config/vsworker/skills/<name>` or `<name>.zip` into `vsworker/skills/` under the same name, reading
+`SKILL.md` out of the source first so an archive that imports is one that bundles. Both append to
 `bundle.jsonc` without disturbing its comments.
 
 At runtime:

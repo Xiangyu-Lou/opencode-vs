@@ -1,11 +1,12 @@
 import path from "path"
-import { existsSync, readFileSync, statSync } from "fs"
+import { existsSync } from "fs"
 import { Schema } from "effect"
 import { ConfigMarkdown } from "@opencode-ai/core/config/markdown"
 import { ConfigMCPV1 } from "@opencode-ai/core/v1/config/mcp"
 import { VsWorkerEnv } from "../src/env"
 import { parse as parseJsonc, type ParseError } from "jsonc-parser"
 import semver from "semver"
+import { SkillSource } from "./skill-source"
 
 export const ROOT = path.resolve(import.meta.dirname, "..")
 export const REPO = path.resolve(ROOT, "..")
@@ -76,7 +77,8 @@ export const SkillEntry = Schema.Struct({
     description: "Skill name. Must match the name in the skill's SKILL.md frontmatter",
   }),
   path: Schema.optional(Schema.String).annotate({
-    description: "Skill directory relative to vsworker/. Defaults to skills/<id>",
+    description:
+      "Skill source relative to vsworker/: a directory, or a .zip archive holding one. Defaults to skills/<id>, or skills/<id>.zip when that is what exists",
   }),
   enabled: Enabled,
   defaultEnabled: DefaultEnabled,
@@ -113,7 +115,7 @@ const SHA_PATTERN = /^[0-9a-f]{40}$/
 // Entries are validated beyond the schema because the required fields depend on `source`, because a bad pin only
 // shows up much later as a confusing install or bundling failure, and because a vendored skill has to satisfy the
 // rules the runtime skill loader applies.
-export function validate(manifest: Manifest) {
+export function validate(manifest: Manifest, skills: ReadonlyMap<string, SkillSource.Result>) {
   const problems: string[] = []
 
   const identity = (section: string, entries: readonly { id: string }[]) => {
@@ -178,25 +180,32 @@ export function validate(manifest: Manifest) {
     if ("enabled" in entry.config) problems.push(`${at}: config.enabled is not allowed, set defaultEnabled instead`)
   }
 
+  // A skill's files are read once, by load(), and checked here from memory. That is what lets a skill be
+  // vendored as a directory or as a .zip without this function knowing the difference, and it means validate
+  // and the bundler agree on what a skill's files are instead of each reading the source its own way.
   for (const [index, entry] of manifest.skills.entries()) {
     const at = `skills[${index}] (${entry.id || "missing id"})`
-    const dir = skillDir(entry)
-    const absolute = path.join(ROOT, dir)
-    if (!existsSync(absolute) || !statSync(absolute).isDirectory()) {
-      problems.push(`${at}: skill directory vsworker/${dir} does not exist`)
+    const source = skills.get(entry.id)
+    if (!source) {
+      problems.push(`${at}: no source was read for this skill`)
       continue
     }
-    const file = path.join(absolute, "SKILL.md")
-    if (!existsSync(file)) {
-      problems.push(`${at}: vsworker/${dir}/SKILL.md does not exist`)
+    if ("error" in source) {
+      problems.push(`${at}: ${source.error}`)
+      continue
+    }
+
+    const file = source.files.find((item) => item.path === "SKILL.md")
+    if (!file) {
+      problems.push(`${at}: vsworker/${source.relative} has no SKILL.md`)
       continue
     }
     // The same parser the runtime uses, so a file that loads here loads there.
     const data = (() => {
       try {
-        return ConfigMarkdown.parse(readFileSync(file, "utf8")).data as Record<string, unknown>
+        return ConfigMarkdown.parse(file.data.toString("utf8")).data as Record<string, unknown>
       } catch (error) {
-        problems.push(`${at}: vsworker/${dir}/SKILL.md has invalid frontmatter (${String(error)})`)
+        problems.push(`${at}: ${SkillSource.label(source, "SKILL.md")} has invalid frontmatter (${String(error)})`)
         return undefined
       }
     })()
@@ -210,10 +219,10 @@ export function validate(manifest: Manifest) {
 
     // env.json is optional, but a malformed one exports nothing at runtime and would fail silently. The runtime
     // parser is used here so a file that loads at build time loads in the product too.
-    const envFile = path.join(absolute, VsWorkerEnv.FILE)
-    if (existsSync(envFile)) {
-      const source = `vsworker/${dir}/${VsWorkerEnv.FILE}`
-      for (const problem of VsWorkerEnv.parse(readFileSync(envFile, "utf8"), source).problems) {
+    const env = source.files.find((item) => item.path === VsWorkerEnv.FILE)
+    if (env) {
+      const label = SkillSource.label(source, VsWorkerEnv.FILE)
+      for (const problem of VsWorkerEnv.parse(env.data.toString("utf8"), label).problems) {
         problems.push(`${at}: ${problem}`)
       }
     }
@@ -228,10 +237,6 @@ export function entryPath(entry: PluginEntry) {
   return entry.path ?? path.posix.join("plugins", entry.id, "index.ts")
 }
 
-export function skillDir(entry: SkillEntry) {
-  return entry.path ?? path.posix.join("skills", entry.id)
-}
-
 export function included<T extends { enabled?: boolean }>(entries: readonly T[]) {
   return entries.filter((entry) => entry.enabled !== false)
 }
@@ -243,12 +248,13 @@ export async function load(file = MANIFEST_FILE): Promise<Manifest> {
   if (errors.length) throw new Error(`${file} is not valid JSONC (${errors.length} parse error(s))`)
   // onExcessProperty "error" turns a typo like "verison" into a loud failure instead of a silently ignored pin.
   const decoded = Schema.decodeUnknownSync(ManifestSchema)(data, { errors: "all", onExcessProperty: "error" })
-  return validate({
+  const manifest = {
     ...decoded,
     plugins: decoded.plugins ?? [],
     mcp: decoded.mcp ?? [],
     skills: decoded.skills ?? [],
-  })
+  }
+  return validate(manifest, await SkillSource.readAll(ROOT, manifest.skills))
 }
 
 type JsonSchema = Record<string, unknown>

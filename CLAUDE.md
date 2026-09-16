@@ -195,8 +195,9 @@ Commit all of those, plus anything under `vsworker/skills/`, with `bun.lock`. `b
 and `bundle check --seams` verifies the nineteen marked edits in upstream files survived the last merge
 (twenty-one files are touched; the two `package.json` ones cannot carry a comment).
 
-Skills are vendored under `vsworker/skills/<id>/` and written to `~/.cache/vsworker/vsworker/skills/` at runtime,
-because the skill tool needs a real directory. A skill directory may carry a flat `env.json`; its pairs are
+Skills are vendored under `vsworker/skills/`, as either a directory `<id>/` or a `<id>.zip` holding one, and are
+written to `~/.cache/vsworker/vsworker/skills/` at runtime, because the skill tool needs a real directory. An
+archive is read at build time and inlined like a directory, never shipped. A skill may carry a flat `env.json`; its pairs are
 exported to bash commands that run inside that directory or name a path inside it, for bundled skills and for any
 skill a user drops on disk alike (`vsworker/src/env.ts`, seam in `packages/opencode/src/tool/shell.ts`). MCP
 entries carry a definition, not a server: keep credentials out of them and use `{env:VAR}` / `{file:path}`, which

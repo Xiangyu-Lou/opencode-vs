@@ -123,7 +123,9 @@ bun run --cwd vsworker bundle bump <id>          # or: bump <id> <version|sha>
 ```
 
 `bump` repins a plugin in the manifest and regenerates. MCP definitions and skills are edited in place: change
-`bundle.jsonc` or the files under `vsworker/skills/`, then run `bundle generate`.
+`bundle.jsonc` or the files under `vsworker/skills/`, then run `bundle generate`. A skill vendored as a
+`<id>.zip` there is a source file like any other — re-read on every `generate` and `check`, never shipped as an
+archive.
 
 Commit `vsworker/bundle.jsonc`, `vsworker/package.json`, `vsworker/src/*.gen.ts`, `vsworker/bundle.schema.json`,
 `vsworker/skills/**`, and `bun.lock` together. A plugin version published less than three days ago cannot be

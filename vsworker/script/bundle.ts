@@ -4,7 +4,6 @@ import path from "path"
 import os from "os"
 import { existsSync } from "fs"
 import fs from "fs/promises"
-import { createHash } from "crypto"
 import prettier from "prettier"
 import semver from "semver"
 import { Schema } from "effect"
@@ -21,13 +20,13 @@ import {
   included,
   jsonSchema,
   load,
-  skillDir,
   type Kind,
   type Manifest,
   type McpEntry,
   type PluginEntry,
   type SkillEntry,
 } from "./manifest"
+import { SkillSource } from "./skill-source"
 
 const SERVER_GEN = path.join(ROOT, "src", "server.gen.ts")
 const TUI_GEN = path.join(ROOT, "src", "tui.gen.ts")
@@ -41,13 +40,6 @@ const FIXED_DEPS = ["@opencode-ai/core", "@opencode-ai/plugin", "effect", "jsonc
 // A bundled skill is carried in the binary as inlined text, so a big file costs startup memory in every session.
 const FILE_WARN_BYTES = 256 * 1024
 const SKILL_WARN_BYTES = 1024 * 1024
-
-// Editor and interpreter droppings that appear inside a skill directory but are not part of the skill. They are
-// skipped rather than inlined: they differ per machine, so bundling them would make the skills hash -- and with
-// it `bundle check` -- disagree between the machine that ran `generate` and the machine that runs CI.
-const SKIP_DIRS = new Set(["__pycache__", ".git", ".DS_Store"])
-const SKIP_FILES = new Set([".DS_Store", "Thumbs.db", ".gitkeep"])
-const SKIP_EXTENSIONS = new Set([".pyc", ".pyo"])
 
 const SECRET_KEY = /(token|secret|key|password|passwd|credential|auth)/i
 
@@ -70,16 +62,9 @@ type ResolvedMcp = {
   warnings: string[]
 }
 
-type SkillFile = {
-  path: string
-  encoding: "utf8" | "base64"
-  executable: boolean
-  data: string
-}
-
 type ResolvedSkill = {
   entry: SkillEntry
-  files: SkillFile[]
+  files: SkillSource.BundleFile[]
   warnings: string[]
 }
 
@@ -250,65 +235,20 @@ function resolveMcp(entry: McpEntry): ResolvedMcp {
   return { entry, warnings }
 }
 
-// Copy of isSafeRelativePath in packages/core/src/skill/discovery.ts. The runtime applies it to skills pulled
-// from a URL; a vendored skill gets the same treatment so a path that cannot be materialized is caught here.
-function isSafeRelativePath(value: string) {
-  const segments = value.split("/")
-  return (
-    value.length > 0 &&
-    !value.includes("\\") &&
-    !value.includes("\0") &&
-    !path.posix.isAbsolute(value) &&
-    !path.win32.isAbsolute(value) &&
-    segments.every((segment) => segment.length > 0 && segment !== "." && segment !== "..")
-  )
-}
-
-async function walk(root: string, prefix = ""): Promise<string[]> {
-  const entries = await fs.readdir(path.join(root, prefix), { withFileTypes: true })
-  const result: string[] = []
-  for (const entry of entries) {
-    const relative = prefix ? path.posix.join(prefix, entry.name) : entry.name
-    if (entry.isSymbolicLink()) {
-      throw new Error(`${relative} is a symlink. A bundled skill has to be self-contained.`)
-    }
-    if (entry.isDirectory()) {
-      if (SKIP_DIRS.has(entry.name)) continue
-      result.push(...(await walk(root, relative)))
-      continue
-    }
-    if (SKIP_FILES.has(entry.name) || SKIP_EXTENSIONS.has(path.extname(entry.name))) continue
-    if (entry.isFile()) result.push(relative)
-  }
-  return result
-}
-
 async function resolveSkill(entry: SkillEntry): Promise<ResolvedSkill> {
-  const warnings: string[] = []
-  const dir = skillDir(entry)
-  const absolute = path.join(ROOT, dir)
-  const names = (await walk(absolute)).sort()
+  const source = SkillSource.locate(ROOT, entry)
+  const contents = await SkillSource.read(source, entry.id)
+  const warnings = [...contents.warnings]
 
-  const files: SkillFile[] = []
+  const files = contents.files.map(SkillSource.encode)
   let total = 0
-  for (const name of names) {
-    if (!isSafeRelativePath(name)) throw new Error(`${dir}/${name} is not a safe relative path`)
-    const file = path.join(absolute, ...name.split("/"))
-    const buffer = await fs.readFile(file)
-    const stat = await fs.stat(file)
-    // A NUL byte or a failed UTF-8 round trip means the bytes are not text, so carry them as base64.
-    const text = buffer.toString("utf8")
-    const binary = buffer.includes(0) || !Buffer.from(text, "utf8").equals(buffer)
-    total += buffer.byteLength
-    if (buffer.byteLength > FILE_WARN_BYTES) {
-      warnings.push(`skill ${entry.id}: ${name} is ${Math.round(buffer.byteLength / 1024)} KiB, inlined into the build`)
+  for (const file of contents.files) {
+    total += file.data.byteLength
+    if (file.data.byteLength > FILE_WARN_BYTES) {
+      warnings.push(
+        `skill ${entry.id}: ${file.path} is ${Math.round(file.data.byteLength / 1024)} KiB, inlined into the build`,
+      )
     }
-    files.push({
-      path: name,
-      encoding: binary ? "base64" : "utf8",
-      executable: process.platform !== "win32" && (stat.mode & 0o111) !== 0,
-      data: binary ? buffer.toString("base64") : text,
-    })
   }
 
   if (total > SKILL_WARN_BYTES) {
@@ -319,7 +259,8 @@ async function resolveSkill(entry: SkillEntry): Promise<ResolvedSkill> {
   // credential in it ships to everyone. {env:VAR} and {file:path} are substituted per machine at load time.
   const env = files.find((file) => file.path === VsWorkerEnv.FILE)
   if (env && env.encoding === "utf8") {
-    for (const [key, value] of Object.entries(VsWorkerEnv.parse(env.data, `${dir}/${VsWorkerEnv.FILE}`).values)) {
+    const label = SkillSource.label(source, VsWorkerEnv.FILE)
+    for (const [key, value] of Object.entries(VsWorkerEnv.parse(env.data, label).values)) {
       if (SECRET_KEY.test(key) && value && !placeheld(value)) {
         warnings.push(`skill ${entry.id}: env.json ${key} looks like a secret and is compiled into every build`)
       }
@@ -327,20 +268,6 @@ async function resolveSkill(entry: SkillEntry): Promise<ResolvedSkill> {
   }
 
   return { entry, files, warnings }
-}
-
-// The hash decides whether a running build re-materializes the cache directory. `executable` is part of it so a
-// chmod alone still invalidates.
-function hashSkills(rows: ResolvedSkill[]) {
-  const hash = createHash("sha256")
-  const lines: string[] = []
-  for (const row of rows) {
-    for (const file of row.files) {
-      lines.push(JSON.stringify([row.entry.id, file.path, file.encoding, file.executable, file.data]))
-    }
-  }
-  for (const line of lines.sort()) hash.update(line + "\n")
-  return hash.digest("hex")
 }
 
 function literal(value: unknown) {
@@ -464,7 +391,7 @@ async function build() {
 
   const skillRows: ResolvedSkill[] = []
   for (const entry of included(manifest.skills)) skillRows.push(await resolveSkill(entry))
-  const hash = hashSkills(skillRows)
+  const hash = SkillSource.hashSkills(skillRows.map((row) => ({ id: row.entry.id, files: row.files })))
 
   const server = rows.filter((row) => row.kind === "server")
   const tui = rows.filter((row) => row.kind === "tui")
@@ -705,34 +632,50 @@ async function importSkill(name: string, rest: string[]) {
   }
 
   const from = flag(rest, "from")
-  const source = (() => {
+  const found = (() => {
     if (from) return from
     const dir = configDir()
+    // A skill lives in a directory or in a .zip holding one, under either spelling of the parent.
     for (const parent of ["skills", "skill"]) {
-      const candidate = path.join(dir, parent, name)
-      if (existsSync(candidate)) return candidate
+      for (const suffix of ["", SkillSource.ARCHIVE_EXTENSION]) {
+        const candidate = path.join(dir, parent, name + suffix)
+        if (existsSync(candidate)) return candidate
+      }
     }
-    throw new Error(`no skill named ${name} under ${dir}/skills or ${dir}/skill. Pass --from <dir>.`)
+    throw new Error(`no skill named ${name} under ${dir}/skills or ${dir}/skill. Pass --from <dir|file.zip>.`)
   })()
 
-  const file = path.join(source, "SKILL.md")
-  if (!existsSync(file)) throw new Error(`${file} does not exist`)
-  const data = ConfigMarkdown.parse(await Bun.file(file).text()).data as Record<string, unknown>
+  // Read the source the way `generate` will, so an archive that imports cleanly is one that bundles cleanly.
+  const source = SkillSource.external(found)
+  const contents = await SkillSource.read(source, name)
+  const file = contents.files.find((item) => item.path === "SKILL.md")
+  if (!file) throw new Error(`${found} has no SKILL.md`)
+  const data = ConfigMarkdown.parse(file.data.toString("utf8")).data as Record<string, unknown>
   if (data.name !== name) {
-    throw new Error(`${file} declares name ${JSON.stringify(data.name)}, expected ${name}`)
+    throw new Error(`${found} declares name ${JSON.stringify(data.name)}, expected ${name}`)
   }
 
-  const dest = path.join(ROOT, "skills", name)
-  if (existsSync(dest)) {
-    if (!rest.includes("--force")) throw new Error(`vsworker/skills/${name} already exists. Pass --force to replace.`)
-    await fs.rm(dest, { recursive: true, force: true })
+  // Both destinations are cleared, not just the one being written: leaving a same-named directory next to a
+  // new archive makes the source ambiguous, which `bundle validate` then refuses.
+  const relative = `skills/${name}${source.kind === "archive" ? SkillSource.ARCHIVE_EXTENSION : ""}`
+  const existing = [`skills/${name}`, `skills/${name}${SkillSource.ARCHIVE_EXTENSION}`].filter((item) =>
+    existsSync(path.join(ROOT, item)),
+  )
+  if (existing.length) {
+    if (!rest.includes("--force")) {
+      throw new Error(`vsworker/${existing.join(" and vsworker/")} already exists. Pass --force to replace.`)
+    }
+    for (const item of existing) await fs.rm(path.join(ROOT, item), { recursive: true, force: true })
   }
-  await fs.cp(source, dest, { recursive: true, dereference: false })
+  const dest = path.join(ROOT, relative)
+  if (source.kind === "archive") await fs.copyFile(source.absolute, dest)
+  else await fs.cp(source.absolute, dest, { recursive: true, dereference: false })
 
+  for (const warning of contents.warnings) console.warn(`warning: ${warning}`)
   const entry: Record<string, unknown> = { id: name }
   if (typeof data.description === "string") entry.description = data.description
   await patchManifest(["skills", -1], entry)
-  console.log(`imported ${name} from ${source} into vsworker/skills/${name}`)
+  console.log(`imported ${name} from ${found} into vsworker/${relative}`)
   await generate()
 }
 
@@ -814,14 +757,14 @@ switch (command) {
       break
     }
     if (rest[0] === "skill") {
-      if (!rest[1]) throw new Error("usage: bundle import skill <name> [--from <dir>] [--force]")
+      if (!rest[1]) throw new Error("usage: bundle import skill <name> [--from <dir|file.zip>] [--force]")
       await importSkill(rest[1], rest.slice(2))
       break
     }
     throw new Error("usage: bundle import <mcp|skill> <name> [options]")
   default:
     console.log(
-      "usage: bundle <generate|check [--seams]|validate|schema|outdated|bump <id> [version|sha]|import mcp <name> [--from <file>] [--id <id>] [--off]|import skill <name> [--from <dir>] [--force]>",
+      "usage: bundle <generate|check [--seams]|validate|schema|outdated|bump <id> [version|sha]|import mcp <name> [--from <file>] [--id <id>] [--off]|import skill <name> [--from <dir|file.zip>] [--force]>",
     )
     process.exitCode = command ? 1 : 0
 }
