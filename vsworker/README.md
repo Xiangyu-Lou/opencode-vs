@@ -1,5 +1,7 @@
 # Bundled plugins, MCP servers, and skills
 
+**English** | [简体中文](./README.zh.md)
+
 VsWorker ships a curated set of plugins, MCP server definitions, and skills inside the product. They are compiled
 into the CLI binary and the desktop server bundle at build time, so an end user never needs npm, GitHub, or any
 network access for them to work. Updating any of them means shipping a new VsWorker release.
@@ -269,8 +271,10 @@ distribution, which is a separate Linux install the user set up, not the Windows
 
 [PACKAGING.md](./PACKAGING.md) is the build runbook: prerequisites, the macOS and Windows commands, what each
 environment variable decides, the artifact list, how to verify a build actually carries the bundle, and
-troubleshooting. The short version is that every surface keys off `OPENCODE_CHANNEL=vsworker`, macOS builds are
-ad-hoc signed because the fork has no Developer ID, and Windows builds are unsigned, so SmartScreen warns on
+troubleshooting. There are two routes to a Windows client: cross-building on macOS, and building natively on a
+Windows PC. The native one needs fewer environment variables but adds a C++ toolchain and two git settings of
+its own. The short version is that every surface keys off `OPENCODE_CHANNEL=vsworker`, macOS builds are ad-hoc
+signed because the fork has no Developer ID, and Windows builds are unsigned either way, so SmartScreen warns on
 first run.
 
 ## Managing all of this from the desktop client

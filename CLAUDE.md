@@ -205,12 +205,16 @@ are substituted at config load.
 The desktop app has a fourth release channel, `vsworker`, which produces `VsWorker.app` / a per-user NSIS
 installer with bundle id `com.vsworker.desktop` and no update feed, so it never collides with an installed
 `OpenCode.app`. Do not reconstruct the build commands from the configs: `vsworker/PACKAGING.md` is the runbook
-for both platforms, including the Windows cross build from macOS, and it is the only place those commands
-should live.
+for both platforms — including both routes to a Windows client, the cross build from macOS and the native build
+on a Windows PC — and it is the only place those commands should live. The native-Windows section is derived
+from CI and the configs, not yet run on a physical Windows machine, and says so per claim.
 
 Read `vsworker/README.md` before adding anything (the manifest reference, the `bundle import` helpers, and the
 constraints compiled-in content has to satisfy), `vsworker/PACKAGING.md` before building or shipping a desktop
 client, and `vsworker/UPSTREAM.md` before merging upstream (the seam inventory and the merge runbook).
+README and PACKAGING are bilingual: English at `README.md` / `PACKAGING.md`, 简体中文 at `README.zh.md` /
+`PACKAGING.zh.md`, following the root `README.<lang>.md` convention. The two halves of each pair have a 1:1
+heading structure and cross-reference each other by section name — edit both, or neither.
 Upstream suites keep the stock sets because `packages/opencode/test/preload.ts`
 sets `VSWORKER_DISABLE_BUNDLED_PLUGINS`, `_MCP`, and `_SKILLS`, plus `VSWORKER_DISABLE_HIDDEN_PROVIDERS`, which
 keeps upstream's hosted providers in the catalog; tests under `packages/opencode/test/vsworker/` clear them
