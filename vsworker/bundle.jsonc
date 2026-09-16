@@ -3,6 +3,12 @@
   //   bun run --cwd vsworker bundle generate
   // See vsworker/README.md for the field reference and the constraints a bundled entry must satisfy.
   "$schema": "./bundle.schema.json",
+  // A plugin is npm, github, or local. The three take disjoint fields: "version" only for npm, "repo"/"ref"
+  // only for github, and nothing but "path" for local. Full reference in vsworker/README.md.
+  //   { "id": "wakatime", "source": "npm", "package": "opencode-wakatime", "version": "1.2.3" }
+  //   { "id": "team-tools", "source": "github", "package": "team-tools", "repo": "acme/team-tools",
+  //     "ref": "0123456789abcdef0123456789abcdef01234567" }
+  //   { "id": "intranet", "source": "local", "options": { "url": "http://10.0.0.5" } }
   "plugins": [
     {
       "id": "hello",
@@ -13,9 +19,18 @@
   ],
   // Each entry's "config" is an mcp.<id> value exactly as it would appear in opencode.json. Keep secrets out:
   // use {env:VAR} or {file:path}, both substituted at runtime against the user's global config directory.
+  // Use defaultEnabled to ship one switched off; config.enabled is rejected, since that is the user's key.
+  //   { "id": "intranet-docs", "config": { "type": "remote", "url": "http://10.0.0.5/mcp",
+  //     "headers": { "Authorization": "Bearer {env:INTRANET_TOKEN}" } } }
+  //   { "id": "sqlite", "defaultEnabled": false, "config": { "type": "local",
+  //     "command": ["uvx", "mcp-server-sqlite", "--db", "./app.db"] } }
   "mcp": [],
   // Skills are vendored under vsworker/skills/, as a directory <id>/ or a zip <id>.zip holding one. The entry
   // is the same either way. Add one with: bundle import skill <name> [--from <dir|file.zip>]
+  // The source must hold a SKILL.md whose frontmatter name equals the id; "path" is only needed when the
+  // source does not sit at skills/<id>.
+  //   { "id": "report-review", "description": "why it is bundled" }
+  //   { "id": "hello", "defaultEnabled": false }
   "skills": [
     {
       "id": "hello",

@@ -34,6 +34,43 @@ Three fields mean the same thing in all three sections:
 | `defaultEnabled` | `false` bundles it but leaves it off until a user turns it on. Default `true`. |
 | `description`    | Why this entry is bundled. For humans.                                         |
 
+Every section is optional and holds an array of objects. A whole file, with one entry of each kind:
+
+```jsonc
+{
+  "$schema": "./bundle.schema.json",
+  "plugins": [
+    {
+      "id": "intranet",
+      "source": "local",
+      "description": "Points the agent at the internal docs host.",
+      "options": { "url": "http://10.0.0.5" },
+    },
+  ],
+  "mcp": [
+    {
+      "id": "intranet-docs",
+      "description": "Read-only search over the internal docs.",
+      "config": {
+        "type": "remote",
+        "url": "http://10.0.0.5/mcp",
+        "headers": { "Authorization": "Bearer {env:INTRANET_TOKEN}" },
+      },
+    },
+  ],
+  "skills": [
+    {
+      "id": "report-review",
+      "description": "The review checklist the team applies to a 可研报告.",
+    },
+  ],
+}
+```
+
+That bundles a plugin whose code lives at `vsworker/plugins/intranet/index.ts`, an MCP server the user reaches as
+`intranet-docs`, and a skill whose files live at `vsworker/skills/report-review/`. Trailing commas and comments
+are fine — it is JSONC, and `bundle import` preserves both. The sections below say what each kind accepts.
+
 ### `plugins`
 
 | Field     | Applies to  | Meaning                                                                           |
@@ -48,16 +85,36 @@ Three fields mean the same thing in all three sections:
 | `options` | all         | Passed to the plugin as its second argument. Users can override individual keys.  |
 
 ```jsonc
-// An npm package, pinned
-{ "id": "wakatime", "source": "npm", "package": "opencode-wakatime", "version": "1.2.3" }
+// npm, pinned to an exact version.
+{
+  "id": "wakatime",
+  "source": "npm",
+  "package": "opencode-wakatime",
+  "version": "1.2.3",
+  "description": "Sends coding activity to WakaTime.",
+},
 
-// A GitHub repository, pinned to a commit. The repo root must be an installable npm package.
-{ "id": "team-tools", "source": "github", "package": "team-tools", "repo": "acme/team-tools",
-  "ref": "0123456789abcdef0123456789abcdef01234567" }
+// GitHub, pinned to a commit.
+{
+  "id": "team-tools",
+  "source": "github",
+  "package": "team-tools",
+  "repo": "acme/team-tools",
+  "ref": "0123456789abcdef0123456789abcdef01234567",
+},
 
-// An in-house plugin living under vsworker/plugins/
-{ "id": "intranet", "source": "local", "options": { "url": "http://10.0.0.5" } }
+// In-house: the code is at vsworker/plugins/intranet/index.ts, which is what "local" defaults to.
+{
+  "id": "intranet",
+  "source": "local",
+  "options": { "url": "http://10.0.0.5", "timeout": 5000 },
+  "defaultEnabled": false,
+},
 ```
+
+The three sources take **disjoint** fields, and mixing them is rejected rather than ignored: `version` only
+applies to `npm`, `repo` and `ref` only to `github`, and a `local` entry takes nothing but `path`. Two entries
+cannot bundle the same `package`, and an `id` has to match `[a-z0-9][a-z0-9._-]*`.
 
 A GitHub repository whose plugin lives in a subdirectory cannot be used directly, because Bun git dependencies
 address a whole repository. Vendor that plugin into `vsworker/plugins/` as a `local` entry instead.
@@ -68,12 +125,34 @@ address a whole repository. Vendor that plugin into `vsworker/plugins/` as a `lo
 the server name users see, and the prefix on its tool names.
 
 ```jsonc
-{ "id": "intranet-docs", "config": { "type": "remote", "url": "http://10.0.0.5/mcp",
-  "headers": { "Authorization": "Bearer {env:INTRANET_TOKEN}" } } }
+// A remote server. The token is read from the user's environment when config loads, never baked into the build.
+{
+  "id": "intranet-docs",
+  "description": "Read-only search over the internal docs.",
+  "config": {
+    "type": "remote",
+    "url": "http://10.0.0.5/mcp",
+    "headers": { "Authorization": "Bearer {env:INTRANET_TOKEN}" },
+  },
+},
 
-{ "id": "sqlite", "config": { "type": "local", "command": ["uvx", "mcp-server-sqlite", "--db", "./app.db"] },
-  "defaultEnabled": false }
+// A local server, bundled but off until a user turns it on. command[0] has to already exist on their machine.
+{
+  "id": "sqlite",
+  "defaultEnabled": false,
+  "config": {
+    "type": "local",
+    "command": ["uvx", "mcp-server-sqlite", "--db", "./app.db"],
+    "cwd": "./data",
+    "environment": { "SQLITE_READONLY": "1", "SQLITE_TOKEN": "{file:secrets/sqlite-token}" },
+    "timeout": 10000,
+  },
+},
 ```
+
+A `remote` entry needs `type` and `url`, and may carry `headers` and `oauth`. A `local` entry needs `type` and
+`command`, and may carry `cwd`, `environment` and `timeout`. Relative `cwd` resolves against the workspace; a
+relative `{file:}` path resolves against the user's global config directory.
 
 `config.enabled` is rejected: use `defaultEnabled`, because `enabled` is the key a user writes to override it.
 
@@ -95,9 +174,43 @@ has skills enabled starts. They need a real directory on disk at runtime because
 files and slash commands resolve relative paths.
 
 ```jsonc
-{ "id": "report-review", "description": "审核流程 the team follows for 可研报告" }
-{ "id": "drilling-intervention-recommendation", "description": "钻井事故与复杂情况处置措施推荐" } // skills/<id>.zip
-{ "id": "hello", "path": "skills/hello", "defaultEnabled": false }
+// A directory at vsworker/skills/report-review/
+{
+  "id": "report-review",
+  "description": "审核流程 the team follows for 可研报告",
+},
+
+// An archive at vsworker/skills/drilling-intervention-recommendation.zip. The entry is the same either way.
+{
+  "id": "drilling-intervention-recommendation",
+  "description": "钻井事故与复杂情况处置措施推荐",
+},
+
+// Bundled but off until a user enables it. Set "path" only when the source is not at skills/<id>.
+{
+  "id": "hello",
+  "defaultEnabled": false,
+  "description": "Template and smoke test for skill bundling.",
+},
+```
+
+A skill entry is short because most of it lives on disk. What the first entry above refers to:
+
+```
+vsworker/skills/report-review/
+  SKILL.md          # required, and its frontmatter name must equal the entry's id
+  env.json          # optional, see below
+  scripts/…         # optional, anything the skill needs
+  references/…
+```
+
+```markdown
+---
+name: report-review
+description: Use when reviewing a 可研报告 against the team's checklist.
+---
+
+Body: the instructions the model reads once the skill loads.
 ```
 
 The manifest entry is the same either way, so a skill that arrives from the 识油 platform as an archive is

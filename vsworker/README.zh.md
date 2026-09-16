@@ -32,6 +32,43 @@ bun run --cwd vsworker bundle generate
 | `defaultEnabled` | `false` 表示打包进去但默认不开，等用户自己打开。默认 `true`。 |
 | `description`    | 为什么要打包这一条。写给人看的。                              |
 
+三个小节都是可选的，每个都是一个对象数组。一份完整的文件，三类各写一条：
+
+```jsonc
+{
+  "$schema": "./bundle.schema.json",
+  "plugins": [
+    {
+      "id": "intranet",
+      "source": "local",
+      "description": "把 agent 指向内网文档服务。",
+      "options": { "url": "http://10.0.0.5" },
+    },
+  ],
+  "mcp": [
+    {
+      "id": "intranet-docs",
+      "description": "对内网文档的只读检索。",
+      "config": {
+        "type": "remote",
+        "url": "http://10.0.0.5/mcp",
+        "headers": { "Authorization": "Bearer {env:INTRANET_TOKEN}" },
+      },
+    },
+  ],
+  "skills": [
+    {
+      "id": "report-review",
+      "description": "团队审可研报告用的那套检查清单。",
+    },
+  ],
+}
+```
+
+这份配置打包了三样东西：代码在 `vsworker/plugins/intranet/index.ts` 的一个插件、用户看到的名字是
+`intranet-docs` 的一个 MCP server，以及文件在 `vsworker/skills/report-review/` 的一个 skill。
+尾逗号和注释都可以写 —— 它是 JSONC，`bundle import` 也会保住这两样。下面几节讲每一类各自接受什么。
+
 ### `plugins`
 
 | 字段      | 适用于      | 含义                                                           |
@@ -46,16 +83,36 @@ bun run --cwd vsworker bundle generate
 | `options` | 全部        | 作为第二个参数传给插件。用户可以逐个键覆盖。                   |
 
 ```jsonc
-// 一个 npm 包，钉死版本
-{ "id": "wakatime", "source": "npm", "package": "opencode-wakatime", "version": "1.2.3" }
+// npm，钉死一个精确版本。
+{
+  "id": "wakatime",
+  "source": "npm",
+  "package": "opencode-wakatime",
+  "version": "1.2.3",
+  "description": "把编码活动上报给 WakaTime。",
+},
 
-// 一个 GitHub 仓库，钉到某个 commit。仓库根必须本身就是一个可安装的 npm 包。
-{ "id": "team-tools", "source": "github", "package": "team-tools", "repo": "acme/team-tools",
-  "ref": "0123456789abcdef0123456789abcdef01234567" }
+// GitHub，钉到某个 commit。仓库根必须本身就是一个可安装的 npm 包。
+{
+  "id": "team-tools",
+  "source": "github",
+  "package": "team-tools",
+  "repo": "acme/team-tools",
+  "ref": "0123456789abcdef0123456789abcdef01234567",
+},
 
-// 一个放在 vsworker/plugins/ 下的内部插件
-{ "id": "intranet", "source": "local", "options": { "url": "http://10.0.0.5" } }
+// 内部插件：代码在 vsworker/plugins/intranet/index.ts，这正是 local 的默认位置。
+{
+  "id": "intranet",
+  "source": "local",
+  "options": { "url": "http://10.0.0.5", "timeout": 5000 },
+  "defaultEnabled": false,
+},
 ```
+
+三种 `source` 吃的字段是**互斥**的，混着写会直接报错而不是被忽略：`version` 只属于 `npm`，
+`repo` / `ref` 只属于 `github`，`local` 除了 `path` 什么都不接受。两条条目不能打包同一个 `package`，
+`id` 必须匹配 `[a-z0-9][a-z0-9._-]*`。
 
 如果一个 GitHub 仓库的插件在子目录里，那它没法直接用 —— Bun 的 git 依赖是按整个仓库寻址的。
 把那个插件 vendor 进 `vsworker/plugins/`，改成 `local` 条目。
@@ -66,12 +123,34 @@ bun run --cwd vsworker bundle generate
 也是它那些工具名的前缀。
 
 ```jsonc
-{ "id": "intranet-docs", "config": { "type": "remote", "url": "http://10.0.0.5/mcp",
-  "headers": { "Authorization": "Bearer {env:INTRANET_TOKEN}" } } }
+// 一个远程服务器。token 在配置加载时从用户环境里读，不会被编译进构建。
+{
+  "id": "intranet-docs",
+  "description": "对内网文档的只读检索。",
+  "config": {
+    "type": "remote",
+    "url": "http://10.0.0.5/mcp",
+    "headers": { "Authorization": "Bearer {env:INTRANET_TOKEN}" },
+  },
+},
 
-{ "id": "sqlite", "config": { "type": "local", "command": ["uvx", "mcp-server-sqlite", "--db", "./app.db"] },
-  "defaultEnabled": false }
+// 一个本地服务器，打包进去但默认不开。command[0] 必须在用户机器上已经存在。
+{
+  "id": "sqlite",
+  "defaultEnabled": false,
+  "config": {
+    "type": "local",
+    "command": ["uvx", "mcp-server-sqlite", "--db", "./app.db"],
+    "cwd": "./data",
+    "environment": { "SQLITE_READONLY": "1", "SQLITE_TOKEN": "{file:secrets/sqlite-token}" },
+    "timeout": 10000,
+  },
+},
 ```
+
+`remote` 条目需要 `type` 和 `url`，可以再带 `headers` 和 `oauth`；`local` 条目需要 `type` 和 `command`，
+可以再带 `cwd`、`environment` 和 `timeout`。相对的 `cwd` 按工作区解析，相对的 `{file:}` 路径按用户的
+全局配置目录解析。
 
 `config.enabled` 会被拒绝：请用 `defaultEnabled`，因为 `enabled` 正是用户用来覆盖它的那个键。
 
@@ -91,9 +170,43 @@ Skill 在本仓库里 vendored 在 `vsworker/skills/` 下，**目录 `<id>/` 或
 运行时它们需要磁盘上的真实目录，因为 `skill` 工具要列出同级文件，斜杠命令也要解析相对路径。
 
 ```jsonc
-{ "id": "report-review", "description": "审核流程 the team follows for 可研报告" }
-{ "id": "drilling-intervention-recommendation", "description": "钻井事故与复杂情况处置措施推荐" } // skills/<id>.zip
-{ "id": "hello", "path": "skills/hello", "defaultEnabled": false }
+// 一个目录，在 vsworker/skills/report-review/
+{
+  "id": "report-review",
+  "description": "审核流程 the team follows for 可研报告",
+},
+
+// 一个 zip 包，在 vsworker/skills/drilling-intervention-recommendation.zip。两种形式条目写法一样。
+{
+  "id": "drilling-intervention-recommendation",
+  "description": "钻井事故与复杂情况处置措施推荐",
+},
+
+// 打包进去但默认不开。只有当源文件不在 skills/<id> 时才需要写 "path"。
+{
+  "id": "hello",
+  "defaultEnabled": false,
+  "description": "skill 打包流水线的模板和冒烟测试。",
+},
+```
+
+skill 的条目这么短，是因为它绝大部分内容在磁盘上。上面第一条指的是：
+
+```
+vsworker/skills/report-review/
+  SKILL.md          # 必需，frontmatter 里的 name 必须等于条目的 id
+  env.json          # 可选，见下文
+  scripts/…         # 可选，这个 skill 需要的任何文件
+  references/…
+```
+
+```markdown
+---
+name: report-review
+description: 审可研报告、要对照团队检查清单时使用。
+---
+
+正文：skill 被加载之后模型读到的那份说明。
 ```
 
 两种形态的 manifest 写法完全一样，所以从识油平台拿到的 zip 包可以原样丢进去。`path` 也两种都能指。
