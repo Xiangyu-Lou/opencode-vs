@@ -3,7 +3,7 @@
 VsWorker is a fork of `anomalyco/opencode`. Everything the fork adds for bundling plugins, MCP servers, and
 skills lives in `vsworker/`, and everything it adds for managing them from the desktop client lives in
 `packages/opencode/src/vsworker/` and `packages/app/src/vsworker/`. Outside those directories the fork makes
-twenty-one small edits inside upstream files. Nineteen of them carry a `// vsworker-seam` comment so a merge that
+twenty-two small edits inside upstream files. Twenty of them carry a `// vsworker-seam` comment so a merge that
 drops one can be detected mechanically.
 
 ## Seam inventory
@@ -28,21 +28,22 @@ drops one can be detected mechanically.
 
 ## Seam inventory: the management UI
 
-| File                                                             | What the fork adds                                                                 |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `packages/opencode/src/server/routes/instance/httpapi/api.ts`    | `.addHttpApi(VsWorkerApi)` on `InstanceHttpApi`                                    |
-| `packages/opencode/src/server/routes/instance/httpapi/server.ts` | `vsworkerHandlers` in the `instanceApiRoutes` handler list                         |
-| `packages/opencode/test/server/httpapi-exercise/index.ts`        | spreads `vsworkerScenarios` into the route-coverage list                           |
-| `packages/app/src/components/settings-v2/dialog-settings-v2.tsx` | one `<VsWorkerSettingsNav />` and one `<VsWorkerSettingsPanels />`                 |
-| `packages/app/src/context/language.tsx`                          | merges the fork's i18n domain into the base dictionary and into each locale loader |
-| `packages/app/src/components/dialog-connect-provider.tsx`        | the custom provider leads both provider pickers                                    |
+| File                                                             | What the fork adds                                                                                                                           |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/opencode/src/server/routes/instance/httpapi/api.ts`    | `.addHttpApi(VsWorkerApi)` on `InstanceHttpApi`                                                                                              |
+| `packages/opencode/src/server/routes/instance/httpapi/server.ts` | `vsworkerHandlers` in the `instanceApiRoutes` handler list                                                                                   |
+| `packages/opencode/test/server/httpapi-exercise/index.ts`        | spreads `vsworkerScenarios` into the route-coverage list                                                                                     |
+| `packages/app/src/components/settings-v2/dialog-settings-v2.tsx` | one `<VsWorkerSettingsNav />` and one `<VsWorkerSettingsPanels />`                                                                           |
+| `packages/app/src/context/language.tsx`                          | merges the fork's i18n domain into the base dictionary and into each locale loader                                                           |
+| `packages/app/src/components/dialog-connect-provider.tsx`        | the custom provider leads both provider pickers                                                                                              |
+| `packages/app/src/context/settings.tsx`                          | `defaultSettings.general` spreads `agentVisibilityDefaults()`, so the agent picker ships visible and upstream's one-time latch is pre-seeded |
 
-Fork-owned files behind those five seams:
+Fork-owned files behind those seams:
 
 - `packages/opencode/src/vsworker/*` — config writes, entry description, skill files, plugin specs
 - `packages/opencode/src/server/routes/instance/httpapi/{groups,handlers}/vsworker.ts`
 - `packages/opencode/test/{vsworker/*,server/httpapi-vsworker.test.ts,server/httpapi-exercise/vsworker.ts}`
-- `packages/app/src/vsworker/*` and `packages/app/e2e/regression/vsworker-settings.spec.ts`
+- `packages/app/src/vsworker/*` and `packages/app/e2e/regression/vsworker-{settings,agent-picker}.spec.ts`
 
 The generated SDK (`packages/sdk/openapi.json`, `packages/sdk/js/src/**/gen/*`) contains the VsWorker routes.
 It is regenerated, never hand-edited: on a conflict take upstream's copy and rerun `./script/generate.ts`.
@@ -66,7 +67,7 @@ also gained `OPENCODE_TARGET_PLATFORM` / `OPENCODE_TARGET_ARCH`, so a cross buil
 `node-pty` package instead of the build machine's.
 
 The two `package.json` seams are the only ones that are not marked, because JSON has no comments.
-`bundle check --seams` covers the nineteen that are. `.prettierignore` also gains a `vsworker/skills/` line, which is
+`bundle check --seams` covers the twenty that are. `.prettierignore` also gains a `vsworker/skills/` line, which is
 not a seam: losing it only means the formatter rewrites vendored skill files, which `bundle check` then reports as
 drift.
 
@@ -110,7 +111,11 @@ Expected conflict hotspots, in rough order of likelihood:
 6. The two `package.json` dependency lines.
 7. `packages/app/src/context/language.tsx` — upstream adds locales to the `loaders` map often. Every entry has
    to keep passing its own locale as `merge`'s third argument; a new entry that forgets it will not typecheck.
-8. `packages/sdk/**` generated output — never merge it by hand, rerun `./script/generate.ts`.
+8. `packages/app/src/context/settings.tsx` — upstream iterates on the layout-sunset machinery in this file.
+   `...agentVisibilityDefaults()` has to stay inside `defaultSettings.general`: a merge that drops the spread
+   fails typecheck, but one that resolves the hunk in upstream's favour restores `showCustomAgents: false`
+   and still compiles. `packages/app/src/vsworker/agent-visibility.test.ts` asserts the spread is present.
+9. `packages/sdk/**` generated output — never merge it by hand, rerun `./script/generate.ts`.
 
 If `bundle check --seams` reports a missing seam, reapply it from the table above before shipping. A dropped seam
 does not fail typecheck or tests; it silently ships a build with part of the bundle missing.

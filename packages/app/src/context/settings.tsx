@@ -3,6 +3,9 @@ import { batch, createEffect, createMemo, createSignal, onCleanup } from "solid-
 import { createSimpleContext } from "@opencode-ai/ui/context"
 import { persisted } from "@/utils/persist"
 import { usePlatform } from "@/context/platform"
+// vsworker-seam: the fork ships the agent picker on by default, so plan/build switching is available on a
+// fresh install. See packages/app/src/vsworker/agent-visibility.ts.
+import { agentVisibilityDefaults } from "@/vsworker/agent-visibility"
 
 export interface NotificationSettings {
   agent: boolean
@@ -193,7 +196,7 @@ const defaultSettings: Settings = {
     showReasoningSummaries: false,
     shellToolPartsExpanded: false,
     editToolPartsExpanded: false,
-    showCustomAgents: false,
+    ...agentVisibilityDefaults(), // vsworker-seam: picker on, and upstream's one-time latch pre-seeded
     mobileTitlebarPosition: "top",
   },
   appearance: {

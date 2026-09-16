@@ -155,7 +155,7 @@ bun run --cwd vsworker bundle import mcp <name> [--from <file>] [--id <id>] [--o
 ```bash
 bun run --cwd vsworker bundle generate       # 重写 src/*.gen.ts、bundle.schema.json、package.json 的 dependencies
 bun run --cwd vsworker bundle check          # 应输出 bundle is up to date (…)，括号里是当前条目数
-bun run --cwd vsworker bundle check --seams  # 应输出 all 19 seams present
+bun run --cwd vsworker bundle check --seams  # 应输出 all 20 seams present
 ```
 
 `generate` 里那步 `bun install` **只在存在非 local 插件时才会跑**（`vsworker/script/bundle.ts:508`），

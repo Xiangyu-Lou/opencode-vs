@@ -695,14 +695,15 @@ const SEAMS: { file: string; marker: string }[] = [
   { file: "packages/opencode/src/installation/index.ts", marker: "vsworker-seam" },
   { file: "packages/core/src/global.ts", marker: "vsworker-seam" },
   { file: "packages/opencode/test/cli/mcp-add.test.ts", marker: "vsworker-seam" },
-  // Management UI: routes, handlers, route coverage, the settings dialog, the app dictionary, and the
-  // provider picker order.
+  // Management UI: routes, handlers, route coverage, the settings dialog, the app dictionary, the
+  // provider picker order, and the agent-picker default.
   { file: "packages/opencode/src/server/routes/instance/httpapi/api.ts", marker: "vsworker-seam" },
   { file: "packages/opencode/src/server/routes/instance/httpapi/server.ts", marker: "vsworker-seam" },
   { file: "packages/opencode/test/server/httpapi-exercise/index.ts", marker: "vsworker-seam" },
   { file: "packages/app/src/components/settings-v2/dialog-settings-v2.tsx", marker: "vsworker-seam" },
   { file: "packages/app/src/context/language.tsx", marker: "vsworker-seam" },
   { file: "packages/app/src/components/dialog-connect-provider.tsx", marker: "vsworker-seam" },
+  { file: "packages/app/src/context/settings.tsx", marker: "vsworker-seam" },
 ]
 
 async function seams() {

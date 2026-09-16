@@ -167,7 +167,7 @@ bun run --cwd vsworker bundle import mcp <name> [--from <file>] [--id <id>] [--o
 ```bash
 bun run --cwd vsworker bundle generate       # rewrites src/*.gen.ts, bundle.schema.json, package.json deps
 bun run --cwd vsworker bundle check          # should print bundle is up to date (…), with the current entry count
-bun run --cwd vsworker bundle check --seams  # should print all 19 seams present
+bun run --cwd vsworker bundle check --seams  # should print all 20 seams present
 ```
 
 The `bun install` inside `generate` **only runs when a non-local plugin exists**

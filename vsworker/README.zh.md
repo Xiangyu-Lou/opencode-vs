@@ -6,7 +6,7 @@ VsWorker 在产品内部自带一套精选的 plugin、MCP server 定义和 skil
 和桌面端的服务端 bundle，所以终端用户不需要 npm、不需要 GitHub、也不需要任何网络访问就能用上。
 反过来说，要更新其中任何一项，就意味着发一个新的 VsWorker 版本。
 
-本目录下的一切都归 fork 所有。上游 OpenCode 的文件一共只被动了**二十一处**，其中十九处标了
+本目录下的一切都归 fork 所有。上游 OpenCode 的文件一共只被动了**二十二处**，其中二十处标了
 `// vsworker-seam`，全部登记在 [UPSTREAM.md](./UPSTREAM.md) 里。
 
 本文是**字段参考**：manifest 接受哪些字段，用户怎么关掉某一项。构建 macOS 和 Windows 桌面客户端看
