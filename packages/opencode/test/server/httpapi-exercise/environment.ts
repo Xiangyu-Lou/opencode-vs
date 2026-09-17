@@ -11,8 +11,12 @@ process.env.XDG_CONFIG_HOME = path.join(exerciseGlobalRoot, "config")
 process.env.XDG_STATE_HOME = path.join(exerciseGlobalRoot, "state")
 process.env.XDG_CACHE_HOME = path.join(exerciseGlobalRoot, "cache")
 process.env.OPENCODE_DISABLE_SHARE = "true"
-export const exerciseConfigDirectory = path.join(exerciseGlobalRoot, "config", "opencode")
-export const exerciseDataDirectory = path.join(exerciseGlobalRoot, "data", "opencode")
+// Rebrand edit: the same directory name as `app` in packages/core/src/global.ts, which is what the server reads
+// under the XDG roots set above. It is repeated rather than imported because Global resolves its paths while its
+// module loads, which would happen before the assignments above ran.
+const exerciseApp = "vsworker"
+export const exerciseConfigDirectory = path.join(exerciseGlobalRoot, "config", exerciseApp)
+export const exerciseDataDirectory = path.join(exerciseGlobalRoot, "data", exerciseApp)
 
 const preserveExerciseDatabase = !!process.env.OPENCODE_HTTPAPI_EXERCISE_DB
 export const exerciseDatabasePath =

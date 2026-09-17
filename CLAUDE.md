@@ -199,7 +199,9 @@ Skills are vendored under `vsworker/skills/`, as either a directory `<id>/` or a
 written to `~/.cache/vsworker/vsworker/skills/` at runtime, because the skill tool needs a real directory. An
 archive is read at build time and inlined like a directory, never shipped. A skill may carry a flat `env.json`; its pairs are
 exported to bash commands that run inside that directory or name a path inside it, for bundled skills and for any
-skill a user drops on disk alike (`vsworker/src/env.ts`, seam in `packages/opencode/src/tool/shell.ts`). MCP
+skill a user drops on disk alike (`vsworker/src/env.ts`, seam in `packages/opencode/src/tool/shell.ts`).
+`vsworker.skill_env.<id>` in `opencode.json` overrides those pairs per variable and is what the desktop client's
+Skills tab writes, because the cache a bundled skill materializes into is rewritten on every bundle change. MCP
 entries carry a definition, not a server: keep credentials out of them and use `{env:VAR}` / `{file:path}`, which
 are substituted at config load.
 

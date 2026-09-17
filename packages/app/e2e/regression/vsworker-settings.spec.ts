@@ -135,6 +135,15 @@ async function stubVsWorker(page: Page, writes: Writes, onWrite?: (route: Route)
     if (path === "/vsworker/plugin") return reply(route, data.plugins)
     if (path === "/vsworker/skill") return reply(route, data.skills)
     if (path === "/vsworker/mcp") return reply(route, data.mcp)
+    if (path.endsWith("/env"))
+      return reply(route, {
+        name: "report-review",
+        location: "/cache/report-review/env.json",
+        present: true,
+        defaults: { PLATFORM_BASE_URL: "http://packaged", QA_THRESHOLD: "0.69" },
+        problems: [],
+        overrides: { global: { PLATFORM_BASE_URL: "http://mine" }, project: {} },
+      })
     if (path.endsWith("/content"))
       return reply(route, {
         name: "pg-migrations",
@@ -247,6 +256,55 @@ test("creating a skill validates the name before writing", async ({ page }) => {
     path: "/vsworker/skill",
     method: "POST",
     body: { scope: "global", name: "review-pg-migrations", description: "Review PG migrations", content: "Body" },
+  })
+})
+
+test("editing a bundled skill's environment writes only what differs from the build", async ({ page }) => {
+  const writes: Writes = []
+  const dialog = await openExtensions(page, writes)
+
+  await dialog.locator('[data-action="vsworker-tab-skills"]').click()
+  await dialog.locator('[data-action="vsworker-skill-env-report-review"]').click()
+
+  const envDialog = page.locator(".vsworker-skill-env-dialog")
+  await expect(envDialog).toBeVisible()
+  // The override this scope already carries is editable; the untouched one shows what the build ships.
+  await expect(envDialog.locator('[data-action="vsworker-skill-env-field-PLATFORM_BASE_URL"]')).toHaveValue(
+    "http://mine",
+  )
+  const threshold = envDialog.locator('[data-action="vsworker-skill-env-field-QA_THRESHOLD"]')
+  await expect(threshold).toHaveValue("")
+  await expect(threshold).toHaveAttribute("placeholder", "0.69")
+
+  await threshold.fill("0.8")
+  await envDialog.locator('[data-action="vsworker-skill-env-extra"]').fill("PLATFORM_TOKEN=abc")
+  await envDialog.locator('[data-action="vsworker-skill-env-save"]').click()
+
+  await expect.poll(() => writes.length).toBe(1)
+  expect(writes[0]).toMatchObject({
+    path: "/vsworker/skill/report-review/env",
+    method: "PUT",
+    body: {
+      scope: "global",
+      expectedRevision: revisions.global,
+      env: { PLATFORM_BASE_URL: "http://mine", QA_THRESHOLD: "0.8", PLATFORM_TOKEN: "abc" },
+    },
+  })
+})
+
+test("clearing a skill's environment overrides writes an empty set", async ({ page }) => {
+  const writes: Writes = []
+  const dialog = await openExtensions(page, writes)
+
+  await dialog.locator('[data-action="vsworker-tab-skills"]').click()
+  await dialog.locator('[data-action="vsworker-skill-env-report-review"]').click()
+  await page.locator('[data-action="vsworker-skill-env-clear"]').click()
+
+  await expect.poll(() => writes.length).toBe(1)
+  expect(writes[0]).toMatchObject({
+    path: "/vsworker/skill/report-review/env",
+    method: "PUT",
+    body: { scope: "global", env: {} },
   })
 })
 

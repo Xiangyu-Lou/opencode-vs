@@ -22,6 +22,11 @@ import {
   userSkillRows,
   validateMcp,
   validateSkill,
+  envErrors,
+  envForm,
+  envMask,
+  envPayload,
+  envSecrets,
   type McpForm,
 } from "./controllers"
 import type { UserMcp, UserPlugin, UserSkill } from "./api"
@@ -308,5 +313,53 @@ describe("quick add", () => {
     expect(parseQuickAdd("{not json")).toBeUndefined()
     expect(parseQuickAdd('{"mcpServers":{}}')).toBeUndefined()
     expect(parseQuickAdd('{"nothing":"useful"}')).toBeUndefined()
+  })
+})
+
+describe("skill environment", () => {
+  const defaults = { PLATFORM_BASE_URL: "http://packaged", QA_THRESHOLD: "0.69" }
+
+  test("shows one field per packaged variable, holding this scope's override", () => {
+    expect(envForm(defaults, { PLATFORM_BASE_URL: "http://mine" })).toEqual({
+      fields: { PLATFORM_BASE_URL: "http://mine", QA_THRESHOLD: "" },
+      extra: "",
+    })
+  })
+
+  test("puts an override the build does not ship in the free-form box", () => {
+    expect(envForm(defaults, { PLATFORM_TOKEN: "abc" })).toEqual({
+      fields: { PLATFORM_BASE_URL: "", QA_THRESHOLD: "" },
+      extra: "PLATFORM_TOKEN=abc",
+    })
+  })
+
+  test("writes only the variables that differ from the packaged ones", () => {
+    const form = { fields: { PLATFORM_BASE_URL: "http://mine", QA_THRESHOLD: "0.69" }, extra: "" }
+    expect(envPayload(defaults, form)).toEqual({ PLATFORM_BASE_URL: "http://mine" })
+  })
+
+  test("an emptied field drops the override rather than writing a blank value", () => {
+    expect(envPayload(defaults, { fields: { PLATFORM_BASE_URL: "  ", QA_THRESHOLD: "" }, extra: "" })).toEqual({})
+  })
+
+  test("merges the free-form box, and a visible field wins over a line that repeats it", () => {
+    const form = {
+      fields: { PLATFORM_BASE_URL: "http://mine", QA_THRESHOLD: "" },
+      extra: "EXTRA=1\nPLATFORM_BASE_URL=http://typed",
+    }
+    expect(envPayload(defaults, form)).toEqual({ EXTRA: "1", PLATFORM_BASE_URL: "http://mine" })
+  })
+
+  test("names a free-form key no shell could export", () => {
+    const t = (key: string, params?: Record<string, string | number | boolean>) => `${key}:${params?.key}`
+    expect(envErrors(t, { fields: {}, extra: "GOOD=1" })).toEqual([])
+    expect(envErrors(t, { fields: {}, extra: "not a name=1" })).toEqual(["vsworker.skills.env.invalidKey:not a name"])
+  })
+
+  test("finds the variables worth keeping covered, from either source", () => {
+    expect(envSecrets({ LLM_API_KEY: "sk-abcdefghijklmnopqrstuvwxyz" }, { PLAIN: "0.69" })).toEqual(["LLM_API_KEY"])
+    expect(envSecrets({ TOKEN: "{env:REAL_TOKEN}" })).toEqual([])
+    expect(envMask("anything")).toBe("••••••••")
+    expect(envMask("")).toBe("")
   })
 })

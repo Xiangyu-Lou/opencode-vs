@@ -29,6 +29,16 @@ function label(value: unknown) {
   return typeof value
 }
 
+// The value coercion env.json uses, shared with the config overrides so both spell a boolean and a null the same
+// way. Anything else is not an environment variable value.
+export function scalar(value: unknown): string | undefined {
+  if (typeof value === "string") return value
+  if (typeof value === "boolean") return value ? "1" : "0"
+  if (value === null) return ""
+  if (typeof value === "number" && Number.isFinite(value)) return String(value)
+  return undefined
+}
+
 // All or nothing, like the skill's own Python parser: a file with any problem exports nothing rather than half a
 // configuration, because a half-applied environment is harder to diagnose than an absent one.
 export function parse(text: string, source: string): Parsed {
@@ -52,15 +62,14 @@ export function parse(text: string, source: string): Parsed {
       problems.push(`${source}: ${JSON.stringify(key)} is not a usable environment variable name`)
       continue
     }
-    if (typeof value === "string") values[key] = value
-    else if (typeof value === "boolean") values[key] = value ? "1" : "0"
-    else if (value === null) values[key] = ""
-    else if (typeof value === "number" && Number.isFinite(value)) values[key] = String(value)
-    else {
+    const text = scalar(value)
+    if (text === undefined) {
       problems.push(
         `${source}: ${key} is ${label(value)} — an environment variable can only be a string, number, boolean, or null`,
       )
+      continue
     }
+    values[key] = text
   }
 
   if (problems.length) return { values: {}, problems }
@@ -80,9 +89,15 @@ export type Loaded = Parsed & { present: boolean }
 
 type CacheEntry = { mtimeMs: number; size: number; parsed: Parsed }
 
-// Keyed by file so a skill's env.json is parsed once per change, not once per bash call. `problems` are reported
-// only on a fresh parse, which is what keeps an invalid file from warning on every single command.
+// Keyed by file and by whether placeholders were substituted, so a skill's env.json is parsed once per change, not
+// once per bash call, and the skill tool's raw read (names only) never hands the shell a cached copy with the
+// placeholders still in it. `problems` are reported only on a fresh parse, which is what keeps an invalid file
+// from warning on every single command.
 const cache = new Map<string, CacheEntry>()
+
+function cacheKey(file: string, substituted: boolean) {
+  return `${substituted ? "s" : "r"}:${file}`
+}
 
 export function forget() {
   cache.clear()
@@ -90,20 +105,21 @@ export function forget() {
 
 export async function load(input: { dir: string; substitute?: Substitute }): Promise<Loaded> {
   const file = path.join(input.dir, FILE)
+  const key = cacheKey(file, Boolean(input.substitute))
 
   let stat
   try {
     stat = await fs.stat(file)
   } catch {
-    cache.delete(file)
+    cache.delete(key)
     return { present: false, values: {}, problems: [] }
   }
   if (!stat.isFile()) {
-    cache.delete(file)
+    cache.delete(key)
     return { present: false, values: {}, problems: [] }
   }
 
-  const hit = cache.get(file)
+  const hit = cache.get(key)
   if (hit && hit.mtimeMs === stat.mtimeMs && hit.size === stat.size) {
     return { present: true, values: hit.parsed.values, problems: [] }
   }
@@ -130,7 +146,7 @@ export async function load(input: { dir: string; substitute?: Substitute }): Pro
   }
 
   const parsed = parse(text, file)
-  cache.set(file, { mtimeMs: stat.mtimeMs, size: stat.size, parsed })
+  cache.set(key, { mtimeMs: stat.mtimeMs, size: stat.size, parsed })
   return { present: true, values: parsed.values, problems: parsed.problems }
 }
 
@@ -267,6 +283,9 @@ export type ResolveInput = {
   home?: string
   skills: readonly SkillRef[]
   substitute?: Substitute
+  // Per-skill overrides from config, keyed by skill name. They are layered over the skill's env.json for the same
+  // commands, and they reach a skill that ships no env.json at all.
+  overrides?: ReadonlyMap<string, Values>
 }
 
 // Built-in skills have no directory on disk, so they are skipped rather than resolved against the cwd.
@@ -283,10 +302,20 @@ export async function resolve(input: ResolveInput): Promise<{ env: Values; warni
   for (const skill of ordered) {
     const dir = path.dirname(skill.location)
     if (!matches({ command: input.command, cwd: input.cwd, dir, home: input.home })) continue
+    const extra = input.overrides?.get(skill.name)
     const loaded = await load({ dir, substitute: input.substitute })
-    if (!loaded.present) continue
+    if (!loaded.present && !extra) continue
     for (const problem of loaded.problems) warnings.push(problem)
     Object.assign(env, loaded.values)
+    // Config values were already substituted and schema-checked when the config loaded; only a key can still be
+    // wrong, and a bad one is dropped rather than exported under a name no shell could read.
+    for (const [key, value] of Object.entries(extra ?? {})) {
+      if (!KEY.test(key)) {
+        warnings.push(`skill_env for ${skill.name}: ${JSON.stringify(key)} is not a usable environment variable name`)
+        continue
+      }
+      env[key] = value
+    }
   }
 
   return { env, warnings }

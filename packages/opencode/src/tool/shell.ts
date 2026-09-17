@@ -28,6 +28,7 @@ import { Flag } from "@opencode-ai/core/flag/flag"
 import { Global } from "@opencode-ai/core/global"
 import { Skill } from "@/skill"
 import { VsWorkerEnv } from "@vsworker/bundle/env"
+import { VsWorkerSkillEnv } from "@/vsworker/skill-env"
 
 export { Parameters } from "./shell/prompt"
 
@@ -427,16 +428,19 @@ export const ShellTool = Tool.define(
         { cwd, sessionID: ctx.sessionID, callID: ctx.callID },
         { env: {} },
       )
-      // vsworker-seam: env.json of every skill this command runs inside or names. It wins over the inherited
-      // environment and over plugin shell.env, because it is configuration for exactly this command; a
-      // `KEY=value cmd` prefix inside the command still wins after that, by shell rules.
+      // vsworker-seam: env.json of every skill this command runs inside or names, with the config's
+      // vsworker.skill_env overrides layered on top. It wins over the inherited environment and over plugin
+      // shell.env, because it is configuration for exactly this command; a `KEY=value cmd` prefix inside the
+      // command still wins after that, by shell rules.
       const skills = yield* skill.all()
+      const cfg = yield* config.get()
       const found = yield* Effect.promise(() =>
         VsWorkerEnv.resolve({
           command,
           cwd,
           home: Global.Path.home,
           skills,
+          overrides: VsWorkerSkillEnv.overrides(cfg),
           substitute: (text) =>
             ConfigVariable.substitute({
               text,

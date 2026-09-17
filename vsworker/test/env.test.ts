@@ -94,6 +94,16 @@ describe("load", () => {
     await fs.utimes(file, later, later)
     expect((await VsWorkerEnv.load({ dir })).values).toEqual({ FIXED: "yes" })
   })
+
+  test("a raw read does not serve its placeholders to a substituted one", async () => {
+    const { dir } = await skillDir(JSON.stringify({ TOKEN: "{env:PROBE}" }))
+    expect((await VsWorkerEnv.load({ dir })).values).toEqual({ TOKEN: "{env:PROBE}" })
+    const loaded = await VsWorkerEnv.load({
+      dir,
+      substitute: async (text) => text.replaceAll("{env:PROBE}", "resolved"),
+    })
+    expect(loaded.values).toEqual({ TOKEN: "resolved" })
+  })
 })
 
 describe("tokens", () => {
@@ -188,6 +198,74 @@ describe("resolve", () => {
     }
     expect((await VsWorkerEnv.resolve(input)).warnings).toHaveLength(1)
     expect((await VsWorkerEnv.resolve(input)).warnings).toEqual([])
+  })
+
+  test("a config override wins over the file, key by key", async () => {
+    const { dir } = await skillDir(JSON.stringify({ KEPT: "file", REPLACED: "file" }))
+    const resolved = await VsWorkerEnv.resolve({
+      command: `sh ${dir}/run.sh`,
+      cwd: "/project",
+      skills: [{ name: "probe", location: path.join(dir, "SKILL.md") }],
+      overrides: new Map([["probe", { REPLACED: "config", ADDED: "config" }]]),
+    })
+    expect(resolved.env).toEqual({ KEPT: "file", REPLACED: "config", ADDED: "config" })
+  })
+
+  test("a config override reaches a skill that ships no env.json", async () => {
+    const { dir } = await skillDir()
+    const resolved = await VsWorkerEnv.resolve({
+      command: `sh ${dir}/run.sh`,
+      cwd: "/project",
+      skills: [{ name: "probe", location: path.join(dir, "SKILL.md") }],
+      overrides: new Map([["probe", { ADDED: "config" }]]),
+    })
+    expect(resolved.env).toEqual({ ADDED: "config" })
+  })
+
+  test("an override for another skill, or for a command that matches nothing, stays out", async () => {
+    const { dir } = await skillDir(JSON.stringify({ A: "1" }))
+    const overrides = new Map([["other", { ADDED: "config" }]])
+    const skills = [{ name: "probe", location: path.join(dir, "SKILL.md") }]
+    expect((await VsWorkerEnv.resolve({ command: `sh ${dir}/run.sh`, cwd: "/p", skills, overrides })).env).toEqual({
+      A: "1",
+    })
+    expect(
+      (
+        await VsWorkerEnv.resolve({
+          command: "echo hi",
+          cwd: "/p",
+          skills,
+          overrides: new Map([["probe", { ADDED: "config" }]]),
+        })
+      ).env,
+    ).toEqual({})
+  })
+
+  test("an override key that is not an environment variable name is dropped with a warning", async () => {
+    const { dir } = await skillDir(JSON.stringify({ A: "1" }))
+    const resolved = await VsWorkerEnv.resolve({
+      command: `sh ${dir}/run.sh`,
+      cwd: "/project",
+      skills: [{ name: "probe", location: path.join(dir, "SKILL.md") }],
+      overrides: new Map([["probe", { "not a name": "x", GOOD: "y" }]]),
+    })
+    expect(resolved.env).toEqual({ A: "1", GOOD: "y" })
+    expect(resolved.warnings).toHaveLength(1)
+    expect(resolved.warnings[0]).toContain("not a name")
+  })
+})
+
+describe("scalar", () => {
+  test("coerces the same values env.json accepts", () => {
+    expect(VsWorkerEnv.scalar("text")).toBe("text")
+    expect(VsWorkerEnv.scalar(true)).toBe("1")
+    expect(VsWorkerEnv.scalar(false)).toBe("0")
+    expect(VsWorkerEnv.scalar(null)).toBe("")
+    expect(VsWorkerEnv.scalar(12.5)).toBe("12.5")
+    expect(VsWorkerEnv.scalar(Number.NaN)).toBeUndefined()
+    expect(VsWorkerEnv.scalar({})).toBeUndefined()
+    expect(VsWorkerEnv.scalar([])).toBeUndefined()
+    expect(VsWorkerEnv.scalar(undefined)).toBeUndefined()
   })
 })
 

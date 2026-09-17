@@ -352,3 +352,53 @@ export function parseQuickAdd(input: string): QuickAdd | undefined {
 export function quickAddToForm(value: QuickAdd, fallback = emptyMcpForm()): McpForm {
   return { ...fromMcpConfig(value.name ?? fallback.name, value.config) }
 }
+
+// -------------------------------------------------------------------------------------- skill environment
+
+// Same rule the runtime applies, restated here because this file must not import from the server package.
+export const ENV_KEY = /^[A-Za-z_][A-Za-z0-9_]*$/
+
+export type EnvValues = Record<string, string>
+export type EnvForm = { fields: EnvValues; extra: string }
+
+// One editable field per variable the build ships, in a stable order, holding this scope's override. Anything the
+// scope overrides that the build does not ship goes in the free-form box, which is how a variable the skill reads
+// but does not declare gets set at all.
+export function envForm(defaults: EnvValues, override: EnvValues): EnvForm {
+  const fields: EnvValues = {}
+  for (const key of Object.keys(defaults).sort()) fields[key] = override[key] ?? ""
+  const rest: EnvValues = {}
+  for (const [key, value] of Object.entries(override)) if (!(key in defaults)) rest[key] = value
+  return { fields, extra: renderPairs(rest, "=") }
+}
+
+// An empty field means "use the packaged value", and so does a field still holding it: neither is written, so a
+// later build is free to change it. Declared fields are applied after the free-form box, so a key written in both
+// places resolves to the field the user can see.
+export function envPayload(defaults: EnvValues, form: EnvForm): EnvValues {
+  const out: EnvValues = { ...parsePairs(form.extra, "=") }
+  for (const [key, value] of Object.entries(form.fields)) {
+    const trimmed = value.trim()
+    if (trimmed && trimmed !== defaults[key]) out[key] = trimmed
+  }
+  return out
+}
+
+export function envErrors(t: Translate, form: EnvForm): string[] {
+  return Object.keys(parsePairs(form.extra, "="))
+    .filter((key) => !ENV_KEY.test(key))
+    .map((key) => t("vsworker.skills.env.invalidKey", { key }))
+}
+
+// Which variables carry something that looks like a credential, so the dialog can keep them covered until asked.
+export function envSecrets(...sources: EnvValues[]): string[] {
+  const keys = new Set<string>()
+  for (const source of sources) {
+    for (const [key, value] of Object.entries(source)) if (looksSecret(value)) keys.add(key)
+  }
+  return [...keys].sort()
+}
+
+export function envMask(value: string) {
+  return value ? "••••••••" : ""
+}

@@ -7,6 +7,8 @@ const exists = (file: string) =>
     () => false,
   )
 import path from "path"
+import { VsWorkerEnv } from "@vsworker/bundle/env"
+import { VsWorkerSkills } from "@vsworker/bundle/skills"
 import { Context, Effect, Layer } from "effect"
 import { HttpApiApp } from "../../src/server/routes/instance/httpapi/server"
 import { VsWorkerPaths } from "../../src/server/routes/instance/httpapi/groups/vsworker"
@@ -195,6 +197,100 @@ describe("vsworker HttpApi", () => {
         const tmp = yield* TestInstance
         const response = yield* request(`${VsWorkerPaths.skill}/nope/content`, tmp.directory)
         expect(response.status).toBe(404)
+      }),
+    { config: {} },
+  )
+
+  // The kill switch in preload.ts stops bundled skills being materialized and loaded; it does not empty the build
+  // constant, which is what the environment routes read, so these exercise the real bundle of this build.
+  const bundled = VsWorkerSkills.bundle[0]
+  const envRoute = (name: string) => `${VsWorkerPaths.skill}/${name}/env`
+
+  it.instance(
+    "reads a bundled skill's packaged variables and the overrides each file carries",
+    () =>
+      Effect.gen(function* () {
+        if (!bundled) return
+        const tmp = yield* TestInstance
+        const body = yield* json<any>(yield* request(envRoute(bundled.id), tmp.directory))
+        const packaged = bundled.files.find((file) => file.path === VsWorkerEnv.FILE)
+        expect(body.name).toBe(bundled.id)
+        expect(body.present).toBe(Boolean(packaged))
+        expect(body.defaults).toEqual(packaged ? VsWorkerEnv.parse(packaged.data, "probe").values : {})
+        expect(body.problems).toEqual([])
+        expect(body.overrides).toEqual({ global: {}, project: {} })
+      }),
+    { config: {} },
+  )
+
+  it.instance(
+    "writes, reads back, and clears an environment override",
+    () =>
+      Effect.gen(function* () {
+        if (!bundled) return
+        const tmp = yield* TestInstance
+        const written = yield* send(envRoute(bundled.id), tmp.directory, "PUT", {
+          scope: "project",
+          env: { PLATFORM_BASE_URL: "http://override" },
+        })
+        expect(written.status).toBe(200)
+        expect((yield* configOf(tmp.directory)).vsworker.skill_env[bundled.id]).toEqual({
+          PLATFORM_BASE_URL: "http://override",
+        })
+
+        const body = yield* json<any>(yield* request(envRoute(bundled.id), tmp.directory))
+        expect(body.overrides.project).toEqual({ PLATFORM_BASE_URL: "http://override" })
+
+        const cleared = yield* send(envRoute(bundled.id), tmp.directory, "PUT", { scope: "project", env: {} })
+        expect(cleared.status).toBe(200)
+        expect((yield* configOf(tmp.directory)).vsworker.skill_env?.[bundled.id]).toBeUndefined()
+        const back = yield* json<any>(yield* request(envRoute(bundled.id), tmp.directory))
+        expect(back.overrides.project).toEqual({})
+      }),
+    { config: {} },
+  )
+
+  it.instance(
+    "refuses an override key that no shell could export",
+    () =>
+      Effect.gen(function* () {
+        if (!bundled) return
+        const tmp = yield* TestInstance
+        const response = yield* send(envRoute(bundled.id), tmp.directory, "PUT", {
+          scope: "project",
+          env: { "not a name": "x" },
+        })
+        expect(response.status).toBe(400)
+        expect((yield* configOf(tmp.directory)).vsworker).toBeUndefined()
+      }),
+    { config: {} },
+  )
+
+  it.instance(
+    "refuses an environment override pinned to a stale revision",
+    () =>
+      Effect.gen(function* () {
+        if (!bundled) return
+        const tmp = yield* TestInstance
+        const response = yield* send(envRoute(bundled.id), tmp.directory, "PUT", {
+          scope: "project",
+          expectedRevision: "0".repeat(64),
+          env: { PLATFORM_BASE_URL: "http://override" },
+        })
+        expect(response.status).toBe(409)
+        expect((yield* configOf(tmp.directory)).vsworker).toBeUndefined()
+      }),
+    { config: {} },
+  )
+
+  it.instance(
+    "reports the environment of a skill this build does not bundle as missing",
+    () =>
+      Effect.gen(function* () {
+        const tmp = yield* TestInstance
+        expect((yield* request(envRoute("vsworker-missing"), tmp.directory)).status).toBe(404)
+        const written = yield* send(envRoute("vsworker-missing"), tmp.directory, "PUT", { scope: "project", env: {} })
+        expect(written.status).toBe(404)
       }),
     { config: {} },
   )

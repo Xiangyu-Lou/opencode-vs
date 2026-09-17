@@ -274,6 +274,27 @@ This applies to any skill the host discovers, not just bundled ones. A colleague
 into `~/.config/vsworker/skills/<name>/` gets the same behaviour, which is how a skill is customised: copy the
 bundled directory there, edit its `env.json`, and the disk copy wins by name.
 
+**Overriding a bundled skill's variables.** `vsworker.skill_env.<id>` in `opencode.json` holds per-variable
+overrides, layered over the skill's own `env.json` for exactly the same commands. This is what the desktop
+client's **Environment** button writes, and it is the way to change a bundled skill's configuration without
+copying the whole directory: the cache the build materializes into is rewritten whenever the bundle changes, so
+an edit made there does not survive an upgrade.
+
+```jsonc
+{ "vsworker": { "skill_env": { "drilling-intervention-recommendation": { "PLATFORM_BASE_URL": "http://10.0.0.5" } } } }
+```
+
+- Global and project values merge **per variable**, project winning, so a project can retarget one address
+  without restating the rest.
+- Values are substituted at config load, so `{env:VAR}` works here even for a vendored script that reads
+  `env.json` literally and would otherwise see the placeholder text.
+- A variable the skill reads but does not ship can be set this way too; it does not have to appear in `env.json`.
+- Overrides apply to whichever skill of that name is loaded, and they apply even when the skill ships no
+  `env.json` at all.
+
+Precedence, highest first: a `KEY=value` prefix on the command, then `vsworker.skill_env`, then the skill's
+`env.json`, then a plugin's `shell.env`, then the inherited environment.
+
 The `skill` tool tells the model which variables a skill provides, by name only. `bundle validate` and
 `bundle generate` parse a vendored `env.json` with the same parser the product uses, so a file that loads at build
 time loads at runtime, and they warn when a key that looks like a credential carries a literal value.
@@ -434,6 +455,10 @@ lists what this build bundles alongside what the user declared, and writes chang
   pulled from a `skills.urls` index are listed read-only, because they are not ours to rewrite.
 - A bundled MCP server can be copied into the user's config to be edited. That is a fork in the road, not a
   patch: the copy stops following the build, exactly as the precedence rules above describe.
+- A bundled skill's **Environment** button edits `vsworker.skill_env.<id>` rather than the skill's own files:
+  the packaged values are shown as the placeholder of each field, and only what the user actually changed is
+  written, so a later build is free to move anything they left alone. Values that look like credentials stay
+  covered until asked for.
 
 The routes are `GET|POST|PATCH|PUT|DELETE /vsworker/{plugin,skill,skill-source,mcp}`, declared in
 `packages/opencode/src/server/routes/instance/httpapi/groups/vsworker.ts`. They are part of the generated SDK,

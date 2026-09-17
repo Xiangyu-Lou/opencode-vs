@@ -5,7 +5,7 @@ import { Switch } from "@opencode-ai/ui/v2/switch-v2"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { For, Show, createMemo, type Accessor, type Component } from "solid-js"
 import { useLanguage } from "@/context/language"
-import type { Scope, SkillContent, UserSkill, VsWorker } from "./api"
+import type { Scope, SkillContent, SkillEnv, UserSkill, VsWorker } from "./api"
 import {
   discoveredSkillRows,
   filterSkills,
@@ -14,9 +14,11 @@ import {
   stateTone,
   toggleDisabled,
   userSkillRows,
+  type EnvValues,
 } from "./controllers"
 import { DialogConfirm } from "./dialog-confirm"
 import { DialogSkill } from "./dialog-skill"
+import { DialogSkillEnv } from "./dialog-skill-env"
 import { DialogSkillSources } from "./dialog-skill-sources"
 import { useFileActions } from "./file-actions"
 import { Empty, Pill, Row, Section, TabHeader } from "./parts"
@@ -58,9 +60,29 @@ export const VsWorkerSkills: Component<{
     props.vsworker.api().skill.sources({ scope: props.scope(), ...input, expectedRevision: revision() }),
   )
 
+  const envWrite = props.vsworker.mutation((input: { name: string; env: EnvValues }) =>
+    props.vsworker
+      .api()
+      .skill.envWrite({ name: input.name, scope: props.scope(), env: input.env, expectedRevision: revision() }),
+  )
+
   const bundled = createMemo(() => filterSkills(data()?.bundled ?? [], props.query()))
   const user = createMemo(() => userSkillRows(data()?.user ?? [], props.query()))
   const discovered = createMemo(() => discoveredSkillRows(data()?.user ?? [], props.query()))
+
+  // Fetched when the dialog opens rather than carried on every row: the values are the point of the dialog, and
+  // the list is read far more often than it is edited.
+  const openEnv = async (name: string) => {
+    const result = await props.vsworker.api().skill.env({ name })
+    const env = result.data as SkillEnv
+    void dialog.push(() => (
+      <DialogSkillEnv
+        scope={props.scope()}
+        env={env}
+        onSubmit={(values) => envWrite.mutateAsync({ name, env: values })}
+      />
+    ))
+  }
 
   const open = async (name: string, mode: "edit" | "view") => {
     const result = await props.vsworker.api().skill.content({ name })
@@ -103,6 +125,17 @@ export const VsWorkerSkills: Component<{
                       <ButtonV2 variant="ghost-muted" size="normal" onClick={() => void open(row.id, "view")}>
                         {language.t("vsworker.action.view")}
                       </ButtonV2>
+                      {/* A killed or shadowed skill is not the one whose environment would be read. */}
+                      <Show when={!toggleDisabled(row.state)}>
+                        <ButtonV2
+                          variant="ghost-muted"
+                          size="normal"
+                          data-action={`vsworker-skill-env-${row.id}`}
+                          onClick={() => void openEnv(row.id)}
+                        >
+                          {language.t("vsworker.skills.env.action")}
+                        </ButtonV2>
+                      </Show>
                       <Switch
                         hideLabel
                         label={row.id}

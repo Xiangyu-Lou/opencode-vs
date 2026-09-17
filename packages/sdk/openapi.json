@@ -9901,6 +9901,207 @@
         ]
       }
     },
+    "/vsworker/skill/{name}/env": {
+      "get": {
+        "tags": ["vsworker"],
+        "operationId": "vsworker.skill.env",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "directory",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "workspace",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Packaged variables and config overrides",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerSkillEnv"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VsWorkerInvalidError | InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/VsWorkerInvalidError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InvalidRequestError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VsWorkerNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerNotFoundError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VsWorkerConflictError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerConflictError"
+                }
+              }
+            }
+          }
+        },
+        "description": "Read the variables a bundled skill's env.json declares alongside the overrides each config file carries.",
+        "summary": "Read a bundled skill's environment",
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.vsworker.skill.env({\n  ...\n})"
+          }
+        ]
+      },
+      "put": {
+        "tags": ["vsworker"],
+        "operationId": "vsworker.skill.envWrite",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "directory",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "workspace",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Config written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerRevisions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VsWorkerInvalidError | InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/VsWorkerInvalidError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InvalidRequestError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VsWorkerNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerNotFoundError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VsWorkerConflictError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VsWorkerConflictError"
+                }
+              }
+            }
+          }
+        },
+        "description": "Replace the environment overrides for a bundled skill in the chosen config file. An empty object clears them.",
+        "summary": "Override a bundled skill's environment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "$ref": "#/components/schemas/VsWorkerScope"
+                  },
+                  "expectedRevision": {
+                    "type": "string"
+                  },
+                  "env": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": ["scope", "env"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.vsworker.skill.envWrite({\n  ...\n})"
+          }
+        ]
+      }
+    },
     "/vsworker/skill/{name}": {
       "patch": {
         "tags": ["vsworker"],
@@ -21930,6 +22131,41 @@
             "additionalProperties": {
               "type": "boolean"
             }
+          },
+          "skill_env": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string",
+                    "enum": ["NaN"]
+                  },
+                  {
+                    "type": "string",
+                    "enum": ["Infinity"]
+                  },
+                  {
+                    "type": "string",
+                    "enum": ["-Infinity"]
+                  },
+                  {
+                    "type": "string",
+                    "enum": ["Infinity", "-Infinity", "NaN"]
+                  },
+                  {
+                    "type": "boolean"
+                  }
+                ]
+              }
+            }
           }
         },
         "additionalProperties": false
@@ -25031,6 +25267,53 @@
           }
         },
         "required": ["name", "location", "content", "editable"],
+        "additionalProperties": false
+      },
+      "VsWorkerSkillEnv": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "present": {
+            "type": "boolean"
+          },
+          "defaults": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "overrides": {
+            "type": "object",
+            "properties": {
+              "global": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "project": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": ["global", "project"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["name", "location", "present", "defaults", "problems", "overrides"],
         "additionalProperties": false
       },
       "VsWorkerBundledMcp": {

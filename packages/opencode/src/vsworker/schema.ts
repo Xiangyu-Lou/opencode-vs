@@ -136,3 +136,18 @@ export const SkillContent = Schema.Struct({
   content: Schema.String,
   editable: Schema.Boolean,
 }).annotate({ identifier: "VsWorkerSkillContent" })
+
+// A bundled skill's packaged env.json next to the overrides each writable config file carries for it. Values are
+// the raw text of each source, placeholders intact, because that is what the editor edits.
+export const SkillEnv = Schema.Struct({
+  name: Schema.String,
+  location: Schema.String,
+  present: Schema.Boolean,
+  defaults: Schema.Record(Schema.String, Schema.String),
+  problems: Schema.Array(Schema.String),
+  // Both scopes are always present; an empty record means the file carries no override for this skill.
+  overrides: Schema.Struct({
+    global: Schema.Record(Schema.String, Schema.String),
+    project: Schema.Record(Schema.String, Schema.String),
+  }),
+}).annotate({ identifier: "VsWorkerSkillEnv" })

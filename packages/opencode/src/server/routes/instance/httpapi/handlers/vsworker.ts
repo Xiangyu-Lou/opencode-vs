@@ -1,4 +1,8 @@
 // vsworker-seam: fork-owned handlers for the VsWorker management routes.
+import path from "path"
+import { Global } from "@opencode-ai/core/global"
+import { VsWorkerEnv } from "@vsworker/bundle/env"
+import { VsWorkerSkills } from "@vsworker/bundle/skills"
 import { Config } from "@/config/config"
 import { MCP } from "@/mcp"
 import { RuntimeFlags } from "@/effect/runtime-flags"
@@ -8,6 +12,7 @@ import { InstanceRef } from "@/effect/instance-ref"
 import { VsWorkerConfigEdit } from "@/vsworker/config-edit"
 import { VsWorkerDescribe } from "@/vsworker/describe"
 import { VsWorkerPluginEdit } from "@/vsworker/plugin-edit"
+import { VsWorkerSkillEnv } from "@/vsworker/skill-env"
 import { VsWorkerSkillFiles } from "@/vsworker/skill-files"
 import { Filesystem } from "@/util/filesystem"
 import { Effect } from "effect"
@@ -23,6 +28,7 @@ import {
   type PluginAddPayload,
   type PluginRemovePayload,
   type PluginUpdatePayload,
+  type SkillEnvPayload,
   type SkillRemovePayload,
   type SkillSourcesPayload,
   type SkillTogglePayload,
@@ -203,6 +209,56 @@ export const vsworkerHandlers = HttpApiBuilder.group(InstanceHttpApi, "vsworker"
       }
     })
 
+    const skillEnv = Effect.fn("VsWorkerHttpApi.skillEnv")(function* (ctx: { params: { name: string } }) {
+      const name = ctx.params.name
+      if (!VsWorkerDescribe.isBundledSkill(name)) {
+        return yield* new VsWorkerNotFoundError({ id: name, message: `${name} is not bundled into this build` })
+      }
+      const files = yield* VsWorkerDescribe.files()
+      const packaged = VsWorkerSkillEnv.defaults(name)
+      return {
+        name,
+        location: path.join(VsWorkerSkills.dir(VsWorkerSkills.root(Global.Path.cache), name), VsWorkerEnv.FILE),
+        present: packaged.present,
+        defaults: packaged.values,
+        problems: packaged.problems,
+        overrides: {
+          global: VsWorkerSkillEnv.scoped(files.global.parsed, name) ?? {},
+          project: files.project ? (VsWorkerSkillEnv.scoped(files.project.parsed, name) ?? {}) : {},
+        },
+      }
+    })
+
+    const skillEnvWrite = Effect.fn("VsWorkerHttpApi.skillEnvWrite")(function* (ctx: {
+      params: { name: string }
+      payload: typeof SkillEnvPayload.Type
+    }) {
+      const name = ctx.params.name
+      if (!VsWorkerDescribe.isBundledSkill(name)) {
+        return yield* new VsWorkerNotFoundError({ id: name, message: `${name} is not bundled into this build` })
+      }
+      const env = ctx.payload.env
+      const invalid = VsWorkerSkillEnv.invalidKeys(env)
+      if (invalid.length) {
+        return yield* new VsWorkerInvalidError({
+          message: `not a usable environment variable name: ${invalid.join(", ")}`,
+          field: "env",
+        })
+      }
+      const file = yield* target(ctx.payload.scope)
+      // Nothing left to override, so the key goes away rather than being written as an empty object.
+      const value = Object.keys(env).length ? env : undefined
+      yield* write(() =>
+        VsWorkerConfigEdit.patch({
+          file,
+          expectedRevision: ctx.payload.expectedRevision,
+          edits: [{ path: ["vsworker", "skill_env", name], value }],
+        }),
+      )
+      yield* reload(config)
+      return yield* revisionsAfter()
+    })
+
     const skillToggle = Effect.fn("VsWorkerHttpApi.skillToggle")(function* (ctx: {
       params: { name: string }
       payload: typeof SkillTogglePayload.Type
@@ -359,6 +415,8 @@ export const vsworkerHandlers = HttpApiBuilder.group(InstanceHttpApi, "vsworker"
       .handle("pluginRemove", pluginRemove)
       .handle("skillList", skillList)
       .handle("skillContent", skillContent)
+      .handle("skillEnv", skillEnv)
+      .handle("skillEnvWrite", skillEnvWrite)
       .handle("skillToggle", skillToggle)
       .handle("skillWrite", skillWrite)
       .handle("skillRemove", skillRemove)

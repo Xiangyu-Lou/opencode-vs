@@ -267,6 +267,24 @@ zip 包**只是构建期的源文件格式**。`bundle generate` 读它、把里
 `~/.config/vsworker/skills/<name>/` 也是同样的行为 —— 这正是定制一个 skill 的办法：
 把内置那份拷过去、改它的 `env.json`，磁盘上的那份按名字取胜。
 
+**覆盖内置 skill 的变量。** `opencode.json` 里的 `vsworker.skill_env.<id>` 存的是按变量的覆盖值，
+对同样那批命令，叠在该 skill 自带的 `env.json` 之上。桌面客户端的 **Environment** 按钮写的就是它；
+要改一个内置 skill 的配置而又不想把整个目录拷一份，靠的也是它 —— 内置 skill 释放到的那个缓存目录
+在 bundle 变化时会被整个重写，所以直接改缓存里的文件熬不过一次升级。
+
+```jsonc
+{ "vsworker": { "skill_env": { "drilling-intervention-recommendation": { "PLATFORM_BASE_URL": "http://10.0.0.5" } } } }
+```
+
+- 全局和项目的值**按变量**合并，项目优先，所以一个项目可以只改一个地址而不必把其余的重写一遍。
+- 值在配置加载时就被替换，所以 `{env:VAR}` 在这里是有效的 —— 哪怕那个 vendored 脚本自己直接读
+  `env.json`、本来只会看到占位符原文。
+- 一个 skill 会读、但没有自带的变量，也可以这样设；它不必先出现在 `env.json` 里。
+- 覆盖作用在「当前加载的那个同名 skill」上，并且即使该 skill 完全没有 `env.json` 也照样生效。
+
+优先级从高到低：命令里的 `KEY=value` 前缀、`vsworker.skill_env`、skill 自带的 `env.json`、
+插件的 `shell.env`、继承来的环境。
+
 `skill` 工具会把一个 skill 提供了哪些变量告诉模型，**只给名字**。`bundle validate` 和 `bundle generate`
 用的是跟产品同一个解析器去读 vendored 的 `env.json`，所以构建时能加载的文件运行时也能加载；
 它们还会在「看起来像凭据的键带了明文值」时告警。
@@ -423,6 +441,9 @@ Settings（`cmd+,` / `Ctrl+,`）里有一个 **Extensions** 区，下面是 **Pl
   以及从 `skills.urls` 索引拉来的东西都是只读列出的，因为它们不归我们改写。
 - 一条内置的 MCP server 可以被拷进用户配置里去编辑。那是一次分叉，不是打补丁：
   拷贝出来的那份从此不再跟着构建走，正如上面的优先级规则所描述的。
+- 内置 skill 的 **Environment** 按钮改的是 `vsworker.skill_env.<id>`，不是该 skill 自己的文件：
+  每个输入框的 placeholder 显示构建自带的值，只有用户真正改过的才会被写下去，
+  没动过的那些以后随构建更新。看起来像凭据的值默认遮住，点一下才显示。
 
 路由是 `GET|POST|PATCH|PUT|DELETE /vsworker/{plugin,skill,skill-source,mcp}`，声明在
 `packages/opencode/src/server/routes/instance/httpapi/groups/vsworker.ts`。它们是生成的 SDK 的一部分，

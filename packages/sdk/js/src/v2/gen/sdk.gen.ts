@@ -414,6 +414,10 @@ import type {
   VsWorkerScope,
   VsworkerSkillContentErrors,
   VsworkerSkillContentResponses,
+  VsworkerSkillEnvErrors,
+  VsworkerSkillEnvResponses,
+  VsworkerSkillEnvWriteErrors,
+  VsworkerSkillEnvWriteResponses,
   VsworkerSkillListErrors,
   VsworkerSkillListResponses,
   VsworkerSkillRemoveErrors,
@@ -5328,6 +5332,87 @@ export class Skill extends HeyApiClient {
       url: "/vsworker/skill/{name}/content",
       ...options,
       ...params,
+    })
+  }
+
+  /**
+   * Read a bundled skill's environment
+   *
+   * Read the variables a bundled skill's env.json declares alongside the overrides each config file carries.
+   */
+  public env<ThrowOnError extends boolean = false>(
+    parameters: {
+      name: string
+      directory?: string
+      workspace?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "name" },
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<VsworkerSkillEnvResponses, VsworkerSkillEnvErrors, ThrowOnError>({
+      url: "/vsworker/skill/{name}/env",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Override a bundled skill's environment
+   *
+   * Replace the environment overrides for a bundled skill in the chosen config file. An empty object clears them.
+   */
+  public envWrite<ThrowOnError extends boolean = false>(
+    parameters: {
+      name: string
+      directory?: string
+      workspace?: string
+      scope?: VsWorkerScope
+      expectedRevision?: string
+      env?: {
+        [key: string]: string
+      }
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "name" },
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+            { in: "body", key: "scope" },
+            { in: "body", key: "expectedRevision" },
+            { in: "body", key: "env" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).put<
+      VsworkerSkillEnvWriteResponses,
+      VsworkerSkillEnvWriteErrors,
+      ThrowOnError
+    >({
+      url: "/vsworker/skill/{name}/env",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
     })
   }
 

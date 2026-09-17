@@ -19,6 +19,7 @@ import type {
   VsWorkerRevisions,
   VsWorkerScope,
   VsWorkerSkillContent,
+  VsWorkerSkillEnv,
   VsWorkerSkillList,
   VsWorkerSkillSources,
   VsWorkerUserMcp,
@@ -43,6 +44,7 @@ export type UserSkill = VsWorkerUserSkill
 export type SkillSources = VsWorkerSkillSources
 export type SkillList = VsWorkerSkillList
 export type SkillContent = VsWorkerSkillContent
+export type SkillEnv = VsWorkerSkillEnv
 export type BundledMcp = VsWorkerBundledMcp
 export type UserMcp = VsWorkerUserMcp
 export type McpList = VsWorkerMcpList

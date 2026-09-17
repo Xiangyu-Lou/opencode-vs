@@ -69,6 +69,21 @@ export const vsworkerScenarios: Scenario[] = [
     }))
     .json(404, object, "status"),
   http.protected
+    .get("/vsworker/skill/{name}/env", "vsworker.skill.env")
+    .at((ctx) => ({
+      path: route("/vsworker/skill/{name}/env", { name: "vsworker-missing" }),
+      headers: ctx.headers(),
+    }))
+    .json(404, object, "status"),
+  http.protected
+    .put("/vsworker/skill/{name}/env", "vsworker.skill.envWrite")
+    .at((ctx) => ({
+      path: route("/vsworker/skill/{name}/env", { name: "vsworker-missing" }),
+      headers: ctx.headers(),
+      body: { scope: "project", env: {} },
+    }))
+    .json(404, object, "status"),
+  http.protected
     .patch("/vsworker/skill/{name}", "vsworker.skill.toggle")
     .at((ctx) => ({
       path: route("/vsworker/skill/{name}", { name: "vsworker-missing" }),

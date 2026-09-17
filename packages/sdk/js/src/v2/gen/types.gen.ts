@@ -1668,6 +1668,11 @@ export type VsWorker = {
   skills?: {
     [key: string]: boolean
   }
+  skill_env?: {
+    [key: string]: {
+      [key: string]: string | number | "NaN" | "Infinity" | "-Infinity" | "Infinity" | "-Infinity" | "NaN" | boolean
+    }
+  }
 }
 
 export type PermissionActionConfig = "ask" | "allow" | "deny"
@@ -2771,6 +2776,24 @@ export type VsWorkerSkillContent = {
   location: string
   content: string
   editable: boolean
+}
+
+export type VsWorkerSkillEnv = {
+  name: string
+  location: string
+  present: boolean
+  defaults: {
+    [key: string]: string
+  }
+  problems: Array<string>
+  overrides: {
+    global: {
+      [key: string]: string
+    }
+    project: {
+      [key: string]: string
+    }
+  }
 }
 
 export type VsWorkerBundledMcp = {
@@ -11412,6 +11435,88 @@ export type VsworkerSkillContentResponses = {
 }
 
 export type VsworkerSkillContentResponse = VsworkerSkillContentResponses[keyof VsworkerSkillContentResponses]
+
+export type VsworkerSkillEnvData = {
+  body?: never
+  path: {
+    name: string
+  }
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vsworker/skill/{name}/env"
+}
+
+export type VsworkerSkillEnvErrors = {
+  /**
+   * VsWorkerInvalidError | InvalidRequestError
+   */
+  400: VsWorkerInvalidError | InvalidRequestError
+  /**
+   * VsWorkerNotFoundError
+   */
+  404: VsWorkerNotFoundError
+  /**
+   * VsWorkerConflictError
+   */
+  409: VsWorkerConflictError
+}
+
+export type VsworkerSkillEnvError = VsworkerSkillEnvErrors[keyof VsworkerSkillEnvErrors]
+
+export type VsworkerSkillEnvResponses = {
+  /**
+   * Packaged variables and config overrides
+   */
+  200: VsWorkerSkillEnv
+}
+
+export type VsworkerSkillEnvResponse = VsworkerSkillEnvResponses[keyof VsworkerSkillEnvResponses]
+
+export type VsworkerSkillEnvWriteData = {
+  body?: {
+    scope: VsWorkerScope
+    expectedRevision?: string
+    env: {
+      [key: string]: string
+    }
+  }
+  path: {
+    name: string
+  }
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vsworker/skill/{name}/env"
+}
+
+export type VsworkerSkillEnvWriteErrors = {
+  /**
+   * VsWorkerInvalidError | InvalidRequestError
+   */
+  400: VsWorkerInvalidError | InvalidRequestError
+  /**
+   * VsWorkerNotFoundError
+   */
+  404: VsWorkerNotFoundError
+  /**
+   * VsWorkerConflictError
+   */
+  409: VsWorkerConflictError
+}
+
+export type VsworkerSkillEnvWriteError = VsworkerSkillEnvWriteErrors[keyof VsworkerSkillEnvWriteErrors]
+
+export type VsworkerSkillEnvWriteResponses = {
+  /**
+   * Config written
+   */
+  200: VsWorkerRevisions
+}
+
+export type VsworkerSkillEnvWriteResponse = VsworkerSkillEnvWriteResponses[keyof VsworkerSkillEnvWriteResponses]
 
 export type VsworkerSkillRemoveData = {
   body?: {

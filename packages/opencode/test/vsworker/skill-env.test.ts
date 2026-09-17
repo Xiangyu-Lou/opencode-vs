@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect } from "bun:test"
 import { LayerNode } from "@opencode-ai/core/effect/layer-node"
+import type { ConfigV1 } from "@opencode-ai/core/v1/config/config"
 import { CrossSpawnSpawner } from "@opencode-ai/core/cross-spawn-spawner"
 import { FSUtil } from "@opencode-ai/core/fs-util"
 import { Ripgrep } from "@opencode-ai/core/ripgrep"
@@ -104,10 +105,11 @@ function scenario<A, E>(
   name: string,
   bundle: VsWorkerSkills.Raw[],
   test: (input: { root: string; directory: string }) => Effect.Effect<A, E, Services>,
+  config: Partial<ConfigV1.Info> = {},
 ) {
   const root = testRoot()
   testEffect(makeLayer(root, bundle)).live(name, () =>
-    provideTmpdirInstance((directory) => test({ root, directory }), { git: true, config: {} }),
+    provideTmpdirInstance((directory) => test({ root, directory }), { git: true, config }),
   )
 }
 
@@ -197,5 +199,71 @@ describe("skill env.json", () => {
       expect(result.output).toContain("env.json")
       expect(result.output).not.toContain("http://x")
     }),
+  )
+
+  scenario(
+    "a config override replaces one packaged value and leaves the others",
+    [stub('{"PLATFORM_BASE_URL":"http://packaged","TOKEN":"packaged"}')],
+    ({ root }) =>
+      Effect.gen(function* () {
+        if (!posix) return
+        const output = yield* run(`sh ${path.join(root, "bundled", "scripts", "run.sh")}`)
+        expect(output).toContain("PLATFORM=[http://override] TOKEN=[packaged]")
+      }),
+    { vsworker: { skill_env: { bundled: { PLATFORM_BASE_URL: "http://override" } } } },
+  )
+
+  scenario(
+    "a config override reaches a skill that ships no env.json",
+    [
+      {
+        id: "bundled",
+        defaultEnabled: true,
+        description: "bundled",
+        files: [
+          { path: "SKILL.md", encoding: "utf8", executable: false, data: frontmatter("bundled") },
+          { path: "scripts/run.sh", encoding: "utf8", executable: true, data: RUNNER },
+        ],
+      },
+    ],
+    ({ root }) =>
+      Effect.gen(function* () {
+        if (!posix) return
+        const output = yield* run(`sh ${path.join(root, "bundled", "scripts", "run.sh")}`)
+        expect(output).toContain("PLATFORM=[http://override]")
+      }),
+    { vsworker: { skill_env: { bundled: { PLATFORM_BASE_URL: "http://override" } } } },
+  )
+
+  scenario(
+    "a config override stays out of a command that names no skill",
+    [stub('{"PLATFORM_BASE_URL":"http://packaged"}')],
+    () =>
+      Effect.gen(function* () {
+        if (!posix) return
+        const output = yield* run(`sh -c 'echo "PLATFORM=[$PLATFORM_BASE_URL]"'`)
+        expect(output).toContain("PLATFORM=[]")
+      }),
+    { vsworker: { skill_env: { bundled: { PLATFORM_BASE_URL: "http://override" } } } },
+  )
+
+  // Regression for the load cache: the skill tool reads env.json raw, to name the variables, and a shared cache
+  // entry would then hand the shell the placeholder text instead of the substituted value.
+  scenario(
+    "still substitutes for the shell after the skill tool has read the file",
+    [stub('{"TOKEN":"{env:VSWORKER_TEST_TOKEN}"}')],
+    ({ root }) =>
+      Effect.gen(function* () {
+        if (!posix) return
+        process.env.VSWORKER_TEST_TOKEN = "from-env"
+        const skillTool = yield* SkillTool
+        const definition = yield* skillTool.init()
+        const loaded = yield* definition.execute({ name: "bundled" } as never, ctx)
+        expect(loaded.output).toContain("TOKEN")
+        const output = yield* run(`sh ${path.join(root, "bundled", "scripts", "run.sh")}`).pipe(
+          Effect.ensuring(Effect.sync(() => delete process.env.VSWORKER_TEST_TOKEN)),
+        )
+        expect(output).toContain("TOKEN=[from-env]")
+      }),
   )
 })

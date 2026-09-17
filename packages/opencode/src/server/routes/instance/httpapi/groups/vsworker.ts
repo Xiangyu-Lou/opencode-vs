@@ -61,6 +61,12 @@ export const SkillSourcesPayload = Schema.Struct({
   paths: Schema.Array(Schema.String),
   urls: Schema.Array(Schema.String),
 })
+// The object replaces every override this file carries for the skill, so an empty one clears them. A nullable
+// field would not survive the OpenAPI projection the SDK is generated from, and would say nothing extra.
+export const SkillEnvPayload = Schema.Struct({
+  ...Write,
+  env: Schema.Record(Schema.String, Schema.String),
+})
 
 export const McpUpsertPayload = Schema.Struct({ ...Write, config: ConfigMCPV1.Info })
 export const McpTogglePayload = Schema.Struct({ ...Write, enabled: Schema.Boolean })
@@ -72,6 +78,7 @@ export const VsWorkerPaths = {
   skill: "/vsworker/skill",
   skillItem: "/vsworker/skill/:name",
   skillContent: "/vsworker/skill/:name/content",
+  skillEnv: "/vsworker/skill/:name/env",
   skillSources: "/vsworker/skill-source",
   mcp: "/vsworker/mcp",
   mcpItem: "/vsworker/mcp/:name",
@@ -153,6 +160,33 @@ export const VsWorkerApi = HttpApi.make("vsworker")
             identifier: "vsworker.skill.content",
             summary: "Read a skill",
             description: "Read the frontmatter and body of one skill.",
+          }),
+        ),
+        HttpApiEndpoint.get("skillEnv", VsWorkerPaths.skillEnv, {
+          ...query,
+          ...nameParam,
+          success: described(VsWorkerSchema.SkillEnv, "Packaged variables and config overrides"),
+          error: errors,
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "vsworker.skill.env",
+            summary: "Read a bundled skill's environment",
+            description:
+              "Read the variables a bundled skill's env.json declares alongside the overrides each config file carries.",
+          }),
+        ),
+        HttpApiEndpoint.put("skillEnvWrite", VsWorkerPaths.skillEnv, {
+          ...query,
+          ...nameParam,
+          payload: SkillEnvPayload,
+          success: described(VsWorkerSchema.Revisions, "Config written"),
+          error: errors,
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "vsworker.skill.envWrite",
+            summary: "Override a bundled skill's environment",
+            description:
+              "Replace the environment overrides for a bundled skill in the chosen config file. An empty object clears them.",
           }),
         ),
         HttpApiEndpoint.patch("skillToggle", VsWorkerPaths.skillItem, {

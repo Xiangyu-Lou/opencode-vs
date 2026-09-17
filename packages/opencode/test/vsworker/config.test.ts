@@ -59,4 +59,34 @@ describe("config.vsworker", () => {
       }),
     ),
   )
+
+  it.live("keeps the vsworker.skill_env block through decoding", () =>
+    tree(
+      { project: { vsworker: { skill_env: { a: { URL: "http://x", COUNT: 3, ON: true, EMPTY: null } } } } },
+      Effect.gen(function* () {
+        const config = yield* Config.use.get()
+        expect(config.vsworker?.skill_env?.a).toEqual({ URL: "http://x", COUNT: 3, ON: true, EMPTY: null })
+      }),
+    ),
+  )
+
+  // The reason skill_env is its own key rather than a widened vsworker.skills entry: the config merge is a deep
+  // merge, so two objects combine per variable, while an object meeting a boolean would drop one of them.
+  it.live("merges skill_env per variable and leaves the on/off decision alone", () =>
+    tree(
+      {
+        global: { vsworker: { skills: { a: false }, skill_env: { a: { KEPT: "global", REPLACED: "global" } } } },
+        project: { vsworker: { skill_env: { a: { REPLACED: "project", ADDED: "project" } } } },
+      },
+      Effect.gen(function* () {
+        const config = yield* Config.use.get()
+        expect(config.vsworker?.skill_env?.a).toEqual({
+          KEPT: "global",
+          REPLACED: "project",
+          ADDED: "project",
+        })
+        expect(config.vsworker?.skills?.a).toBe(false)
+      }),
+    ),
+  )
 })

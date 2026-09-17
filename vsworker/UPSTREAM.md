@@ -8,23 +8,23 @@ drops one can be detected mechanically.
 
 ## Seam inventory
 
-| File                                          | What the fork adds                                                                                                                                   |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `package.json`                                | `"vsworker"` in `workspaces.packages`                                                                                                                |
-| `packages/opencode/package.json`              | `"@vsworker/bundle": "workspace:*"`                                                                                                                  |
-| `packages/core/src/v1/config/config.ts`       | imports `ConfigVsWorkerV1` and adds the optional `vsworker` field. The schema itself is the fork-owned `packages/core/src/v1/config/vsworker.ts`     |
-| `packages/opencode/src/plugin/index.ts`       | yields `VsWorkerPlugins.Service`, runs the bundled plugins between the built-in and external loops, adds `VsWorkerPlugins.node` to `deps`            |
-| `packages/opencode/src/plugin/tui/runtime.ts` | registers bundled TUI plugins after the built-ins                                                                                                    |
-| `packages/opencode/src/config/config.ts`      | yields `VsWorkerMcp.Service`, injects the bundled MCP definitions after the last config source, adds `VsWorkerMcp.node` to `deps`                    |
-| `packages/opencode/src/skill/index.ts`        | yields `VsWorkerSkills.Service`, materializes the bundled skills and seeds them before disk discovery, adds `VsWorkerSkills.node` to `deps`          |
-| `packages/opencode/src/index.ts`              | registers the `vsworker` CLI command                                                                                                                 |
-| `packages/opencode/test/preload.ts`           | sets the three `VSWORKER_DISABLE_BUNDLED_*` variables so upstream suites see the stock sets; writes the cache marker under the renamed app dir       |
-| `packages/opencode/src/tool/shell.ts`         | yields `Skill.Service`, and `shellEnv` takes the command so `VsWorkerEnv.resolve` can add each matching skill's `env.json` on top of the environment |
-| `packages/opencode/src/tool/skill.ts`         | appends one line naming the variables the skill's `env.json` provides                                                                                |
-| `packages/opencode/test/tool/shell.test.ts`   | adds `Skill.node` to the tool's layer group, because `ShellTool` now yields it                                                                       |
-| `packages/opencode/src/installation/index.ts` | yields `VsWorkerRelease.Service` and freezes `method`/`latest`/`upgrade` for a built release, adds `VsWorkerRelease.node` to `deps`                  |
-| `packages/core/src/global.ts`                 | `app` is `vsworker`, so the fork owns its XDG directories instead of sharing opencode's                                                              |
-| `packages/opencode/test/cli/mcp-add.test.ts`  | asserts the global config path under the renamed app dir                                                                                             |
+| File                                          | What the fork adds                                                                                                                                                                                      |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `package.json`                                | `"vsworker"` in `workspaces.packages`                                                                                                                                                                   |
+| `packages/opencode/package.json`              | `"@vsworker/bundle": "workspace:*"`                                                                                                                                                                     |
+| `packages/core/src/v1/config/config.ts`       | imports `ConfigVsWorkerV1` and adds the optional `vsworker` field. The schema itself is the fork-owned `packages/core/src/v1/config/vsworker.ts`                                                        |
+| `packages/opencode/src/plugin/index.ts`       | yields `VsWorkerPlugins.Service`, runs the bundled plugins between the built-in and external loops, adds `VsWorkerPlugins.node` to `deps`                                                               |
+| `packages/opencode/src/plugin/tui/runtime.ts` | registers bundled TUI plugins after the built-ins                                                                                                                                                       |
+| `packages/opencode/src/config/config.ts`      | yields `VsWorkerMcp.Service`, injects the bundled MCP definitions after the last config source, adds `VsWorkerMcp.node` to `deps`                                                                       |
+| `packages/opencode/src/skill/index.ts`        | yields `VsWorkerSkills.Service`, materializes the bundled skills and seeds them before disk discovery, adds `VsWorkerSkills.node` to `deps`                                                             |
+| `packages/opencode/src/index.ts`              | registers the `vsworker` CLI command                                                                                                                                                                    |
+| `packages/opencode/test/preload.ts`           | sets the three `VSWORKER_DISABLE_BUNDLED_*` variables so upstream suites see the stock sets; writes the cache marker under the renamed app dir                                                          |
+| `packages/opencode/src/tool/shell.ts`         | yields `Skill.Service`, and `shellEnv` takes the command so `VsWorkerEnv.resolve` can add each matching skill's `env.json`, plus the config's `vsworker.skill_env` overrides, on top of the environment |
+| `packages/opencode/src/tool/skill.ts`         | appends one line naming the variables the skill's `env.json` provides                                                                                                                                   |
+| `packages/opencode/test/tool/shell.test.ts`   | adds `Skill.node` to the tool's layer group, because `ShellTool` now yields it                                                                                                                          |
+| `packages/opencode/src/installation/index.ts` | yields `VsWorkerRelease.Service` and freezes `method`/`latest`/`upgrade` for a built release, adds `VsWorkerRelease.node` to `deps`                                                                     |
+| `packages/core/src/global.ts`                 | `app` is `vsworker`, so the fork owns its XDG directories instead of sharing opencode's                                                                                                                 |
+| `packages/opencode/test/cli/mcp-add.test.ts`  | asserts the global config path under the renamed app dir                                                                                                                                                |
 
 ## Seam inventory: the management UI
 
@@ -57,7 +57,8 @@ upstream will never touch:
 
 Rebrand edits are a separate, unmarked category: strings and identifiers that name the product or its directories
 (`packages/core/src/plugin/skill.ts`, `packages/core/src/plugin/skill/customize-opencode.md`,
-`packages/opencode/src/skill/index.ts`, `packages/tui/src/feature-plugins/home/tips-view.tsx`, and the desktop
+`packages/opencode/src/skill/index.ts`, `packages/tui/src/feature-plugins/home/tips-view.tsx`,
+`packages/opencode/test/server/httpapi-exercise/environment.ts`, and the desktop
 channel files under `packages/desktop/`). They are not seams because losing one in a merge is visible in the
 product rather than silent. The desktop `vsworker` channel is the largest of them:
 `scripts/utils.ts`, `scripts/copy-icons.ts`, `scripts/copy-metainfo.ts`, `electron-builder.config.ts`,
