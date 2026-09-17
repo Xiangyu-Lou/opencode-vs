@@ -200,3 +200,32 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* The environment dialog lists one field per variable a skill declares, which is more than fits on screen for a
+   skill like the report extractor. The dialog container is capped to the viewport where it is created, and this
+   is the region that scrolls inside it. It wraps the form rather than being it: making the flex column itself the
+   scroller lets flex shrink its own children, which silently collapsed the intro paragraphs to zero height.
+   `min-height: 0` is what lets it shrink below its content and take the overflow, instead of handing it to the
+   dialog, whose own scrollbar the design system hides. */
+.vsworker-env-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* The rest of the app hides its scrollbars. Here the bar is the only thing that says there are more variables
+     below the fold, so it is drawn rather than hidden. Where the platform draws scrollbars as idle-hidden
+     overlays, macOS by default, it still follows the system setting. The gutter is reserved either way so the
+     fields do not reflow, and so the bar clears their focus rings. */
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--v2-border-border-strong) transparent;
+  padding-right: 6px;
+}
+
+/* The row description is built for a single line in a list, where it ellipsizes. In this dialog it is a
+   paragraph of guidance, so it wraps instead of being cut off. */
+.vsworker-skill-env-dialog .vsworker-row-description {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}

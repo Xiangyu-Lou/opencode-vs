@@ -70,6 +70,12 @@ function state() {
           location: "/cache/report-review/SKILL.md",
           state: "enabled" as const,
         },
+        {
+          id: "many-vars",
+          description: "Declares more variables than fit on screen",
+          location: "/cache/many-vars/SKILL.md",
+          state: "enabled" as const,
+        },
       ],
       user: [
         {
@@ -135,7 +141,19 @@ async function stubVsWorker(page: Page, writes: Writes, onWrite?: (route: Route)
     if (path === "/vsworker/plugin") return reply(route, data.plugins)
     if (path === "/vsworker/skill") return reply(route, data.skills)
     if (path === "/vsworker/mcp") return reply(route, data.mcp)
-    if (path.endsWith("/env"))
+    if (path.endsWith("/env")) {
+      // Enough variables that the fields cannot all be on screen at once, which is what the scrolling case needs.
+      if (path.includes("many-vars"))
+        return reply(route, {
+          name: "many-vars",
+          location: "/cache/many-vars/env.json",
+          present: true,
+          defaults: Object.fromEntries(
+            Array.from({ length: 24 }, (_, index) => [`VARIABLE_${String(index).padStart(2, "0")}`, `value-${index}`]),
+          ),
+          problems: [],
+          overrides: { global: {}, project: {} },
+        })
       return reply(route, {
         name: "report-review",
         location: "/cache/report-review/env.json",
@@ -144,6 +162,7 @@ async function stubVsWorker(page: Page, writes: Writes, onWrite?: (route: Route)
         problems: [],
         overrides: { global: { PLATFORM_BASE_URL: "http://mine" }, project: {} },
       })
+    }
     if (path.endsWith("/content"))
       return reply(route, {
         name: "pg-migrations",
@@ -268,6 +287,8 @@ test("editing a bundled skill's environment writes only what differs from the bu
 
   const envDialog = page.locator(".vsworker-skill-env-dialog")
   await expect(envDialog).toBeVisible()
+  await expect(envDialog).toContainText("Leave a field empty")
+  await expect(envDialog).toContainText("saved in your global config")
   // The override this scope already carries is editable; the untouched one shows what the build ships.
   await expect(envDialog.locator('[data-action="vsworker-skill-env-field-PLATFORM_BASE_URL"]')).toHaveValue(
     "http://mine",
@@ -306,6 +327,44 @@ test("clearing a skill's environment overrides writes an empty set", async ({ pa
     method: "PUT",
     body: { scope: "global", env: {} },
   })
+})
+
+test("a skill with many variables scrolls inside the dialog instead of overflowing the screen", async ({ page }) => {
+  const dialog = await openExtensions(page, [])
+
+  await dialog.locator('[data-action="vsworker-tab-skills"]').click()
+  await dialog.locator('[data-action="vsworker-skill-env-many-vars"]').click()
+
+  const envDialog = page.locator(".vsworker-skill-env-dialog")
+  await expect(envDialog).toBeVisible()
+  await expect(envDialog.locator('[data-action="vsworker-skill-env-field-VARIABLE_00"]')).toBeVisible()
+  // Opening the dialog must not scroll its own explanation out of sight, and the explanation must still be drawn:
+  // a scroller that is itself the flex column shrinks these paragraphs to nothing while keeping their text, which
+  // both toContainText and toBeInViewport would happily accept.
+  const intro = envDialog.getByText("Leave a field empty", { exact: false })
+  await expect(intro).toBeInViewport()
+  expect((await intro.boundingBox())!.height).toBeGreaterThan(0)
+
+  // The dialog itself stays on screen, top and bottom.
+  const container = page.locator('[data-slot="dialog-container"]:has(.vsworker-skill-env-dialog)')
+  const box = await container.boundingBox()
+  const viewport = page.viewportSize()
+  expect(box).not.toBeNull()
+  expect(viewport).not.toBeNull()
+  expect(box!.y).toBeGreaterThanOrEqual(0)
+  expect(box!.y + box!.height).toBeLessThanOrEqual(viewport!.height + 1)
+
+  // The overflow went to the field list, and the last variable is reachable by scrolling to it.
+  const scroller = envDialog.locator(".vsworker-env-scroll")
+  const overflow = await scroller.evaluate((node) => node.scrollHeight - node.clientHeight)
+  expect(overflow).toBeGreaterThan(0)
+
+  const last = envDialog.locator('[data-action="vsworker-skill-env-field-VARIABLE_23"]')
+  await last.scrollIntoViewIfNeeded()
+  await expect(last).toBeInViewport()
+
+  // Save stays reachable without scrolling, because the footer is outside the scrolling region.
+  await expect(envDialog.locator('[data-action="vsworker-skill-env-save"]')).toBeInViewport()
 })
 
 test("mcp tab shows runtime status and adds a server from a pasted command", async ({ page }) => {

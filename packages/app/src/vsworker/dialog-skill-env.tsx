@@ -45,82 +45,89 @@ export const DialogSkillEnv: Component<{
   }
 
   return (
-    <Dialog fit class="vsworker-dialog-wide vsworker-skill-env-dialog">
+    // A skill may declare many variables, so the dialog is capped to the viewport and the fields scroll inside
+    // it. A `fit` container has no height of its own, so without the cap it grows off the top and bottom.
+    <Dialog fit containerClass="max-h-[calc(100vh_-_64px)]" class="vsworker-dialog-wide vsworker-skill-env-dialog">
       <DialogHeader hideClose={true}>
         <DialogTitle>{language.t("vsworker.skills.env.title")}</DialogTitle>
       </DialogHeader>
       <DividerV2 />
-      <DialogBody class="flex w-full min-w-0 flex-1 flex-col px-4 pt-4 pb-2">
-        <div class="vsworker-form">
-          <p class="vsworker-row-description">
-            {language.t("vsworker.skills.env.description", { name: props.env.name })}
-          </p>
-          <p class="vsworker-row-description">
-            {props.scope === "project"
-              ? language.t("vsworker.skills.env.savedProject")
-              : language.t("vsworker.skills.env.savedGlobal")}
-          </p>
+      <DialogBody class="flex w-full min-w-0 min-h-0 flex-1 flex-col px-4 pt-4 pb-2">
+        <div class="vsworker-env-scroll">
+          <div class="vsworker-form">
+            <p class="vsworker-row-description">
+              {language.t("vsworker.skills.env.description", { name: props.env.name })}
+            </p>
+            <p class="vsworker-row-description">
+              {props.scope === "project"
+                ? language.t("vsworker.skills.env.savedProject")
+                : language.t("vsworker.skills.env.savedGlobal")}
+            </p>
 
-          <Show when={props.env.problems.length > 0}>
-            <div class="vsworker-field-error" data-action="vsworker-skill-env-problems">
-              <div>{language.t("vsworker.skills.env.problems")}</div>
-              <For each={props.env.problems}>{(problem) => <div>{problem}</div>}</For>
-            </div>
-          </Show>
+            <Show when={props.env.problems.length > 0}>
+              <div class="vsworker-field-error" data-action="vsworker-skill-env-problems">
+                <div>{language.t("vsworker.skills.env.problems")}</div>
+                <For each={props.env.problems}>{(problem) => <div>{problem}</div>}</For>
+              </div>
+            </Show>
 
-          <Show
-            when={keys().length > 0}
-            fallback={<p class="vsworker-row-description">{language.t("vsworker.skills.env.packagedNone")}</p>}
-          >
-            <For each={keys()}>
-              {(key) => (
-                <Field
-                  label={key}
-                  hint={
-                    other()[key] !== undefined
-                      ? props.scope === "project"
-                        ? language.t("vsworker.skills.env.alsoGlobal")
-                        : language.t("vsworker.skills.env.alsoProject")
-                      : language.t("vsworker.skills.env.packaged", {
-                          value: hidden(key) ? envMask(defaults()[key] ?? "") : (defaults()[key] ?? ""),
-                        })
-                  }
-                >
-                  <TextInputV2
-                    appearance="large"
-                    class="!w-full self-stretch"
-                    type={hidden(key) ? "password" : "text"}
-                    value={form.fields[key] ?? ""}
-                    placeholder={hidden(key) ? envMask(defaults()[key] ?? "") : (defaults()[key] ?? "")}
-                    onInput={(event) => setForm("fields", key, event.currentTarget.value)}
-                    spellcheck={false}
-                    autocorrect="off"
-                    autocomplete="off"
-                    autocapitalize="off"
-                    data-action={`vsworker-skill-env-field-${key}`}
-                  />
-                </Field>
-              )}
-            </For>
-          </Show>
+            <Show
+              when={keys().length > 0}
+              fallback={<p class="vsworker-row-description">{language.t("vsworker.skills.env.packagedNone")}</p>}
+            >
+              <For each={keys()}>
+                {(key, index) => (
+                  <Field
+                    label={key}
+                    hint={
+                      other()[key] !== undefined
+                        ? props.scope === "project"
+                          ? language.t("vsworker.skills.env.alsoGlobal")
+                          : language.t("vsworker.skills.env.alsoProject")
+                        : language.t("vsworker.skills.env.packaged", {
+                            value: hidden(key) ? envMask(defaults()[key] ?? "") : (defaults()[key] ?? ""),
+                          })
+                    }
+                  >
+                    <TextInputV2
+                      appearance="large"
+                      class="!w-full self-stretch"
+                      type={hidden(key) ? "password" : "text"}
+                      // Focused through the dialog's own [autofocus] path, which focuses without scrolling. Letting
+                      // the dialog pick a target itself would scroll the description out of view on open.
+                      autofocus={index() === 0 ? true : undefined}
+                      value={form.fields[key] ?? ""}
+                      placeholder={hidden(key) ? envMask(defaults()[key] ?? "") : (defaults()[key] ?? "")}
+                      onInput={(event) => setForm("fields", key, event.currentTarget.value)}
+                      spellcheck={false}
+                      autocorrect="off"
+                      autocomplete="off"
+                      autocapitalize="off"
+                      data-action={`vsworker-skill-env-field-${key}`}
+                    />
+                  </Field>
+                )}
+              </For>
+            </Show>
 
-          <Field
-            label={language.t("vsworker.skills.env.extra")}
-            hint={language.t("vsworker.skills.env.extraHint")}
-            error={errors()[0]}
-          >
-            <TextareaV2
-              class="vsworker-textarea"
-              rows={3}
-              value={form.extra}
-              invalid={errors().length > 0}
-              onInput={(event) => setForm("extra", event.currentTarget.value)}
-              spellcheck={false}
-              autocorrect="off"
-              autocapitalize="off"
-              data-action="vsworker-skill-env-extra"
-            />
-          </Field>
+            <Field
+              label={language.t("vsworker.skills.env.extra")}
+              hint={language.t("vsworker.skills.env.extraHint")}
+              error={errors()[0]}
+            >
+              <TextareaV2
+                class="vsworker-textarea"
+                rows={3}
+                value={form.extra}
+                invalid={errors().length > 0}
+                onInput={(event) => setForm("extra", event.currentTarget.value)}
+                spellcheck={false}
+                autocorrect="off"
+                autocapitalize="off"
+                data-action="vsworker-skill-env-extra"
+              />
+            </Field>
+          </div>
         </div>
       </DialogBody>
       <DialogFooter>
